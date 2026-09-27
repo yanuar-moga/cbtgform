@@ -1464,6 +1464,19 @@
       await loadStudentsByClass(e.target.value);
     });
 
+    function formatServerMessage(message){
+      const raw=String(message||"");
+      const ended=raw.match(/waktu ujian sudah berakhir pada pukul\s+(.+)\.?$/i);
+      if(ended){
+        const time=parseTimeParts(ended[1]);
+        if(time)return "Waktu ujian sudah berakhir pada pukul "+String(time.hour).padStart(2,"0")+":"+String(time.minute).padStart(2,"0")+" WIB.";
+      }
+      if(/1899|1900|31 Dec 1899|Sun Dec 31 1899/i.test(raw)){
+        return "Server mengirim waktu ujian dalam format tanggal dasar Google Sheets. Jam yang terbaca: "+formatTimeValue(raw)+" WIB. Jika seharusnya jam berbeda (misalnya 23:37), perbaiki nilai kolom SELESAI di sheet JADWAL.";
+      }
+      return raw;
+    }
+
     $("loginForm").addEventListener("submit",async e=>{
       e.preventDefault();hideMessage("loginMessage");
       const kelas=$("kelas").value.trim(),username=$("username").value.trim(),password=$("password").value,token=$("token").value.trim();
@@ -1472,19 +1485,13 @@
       try{
         const data=await api("login",{username,password,token,kelas,ip:"",device:getDevice()});
         if(!data.success){
-          const serverMessage=data.message||"Login gagal.";
-          const scheduleError=/1899|1900|31 Dec 1899|Sun Dec 31 1899/i.test(serverMessage)
-            ? "Jadwal server salah membaca kolom waktu (terbaca tahun 1899). Perbaiki format kolom Tanggal, Mulai, dan Selesai di Google Sheet lalu coba login lagi."
-            : serverMessage;
-          setMessage("loginMessage",scheduleError);return;
+          setMessage("loginMessage",formatServerMessage(data.message||"Login gagal."));
+          return;
         }
         if(data.user?.kelas&&data.user.kelas!==kelas){setMessage("loginMessage","Kelas yang dipilih tidak sesuai dengan akun siswa.");return;}
         state.sessionId=data.sessionId;state.user=data.user;state.jadwal=data.jadwal;saveState();showExamScreen();
       }catch(err){
-        const message=err.message||"Gagal menghubungi server.";
-        setMessage("loginMessage",/1899|1900|31 Dec 1899|Sun Dec 31 1899/i.test(message)
-          ? "Format tanggal/jam jadwal di server belum benar. Kolom Tanggal harus berisi tanggal ujian, sedangkan Mulai dan Selesai harus berisi jam saja (contoh 07:30 dan 09:30)."
-          : message);
+        setMessage("loginMessage",formatServerMessage(err.message||"Gagal menghubungi server."));
       }
       finally{setButtonLoading(button,false,"Masuk");}
     });
