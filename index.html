@@ -1024,6 +1024,7 @@
   </section>
 
   <script>
+    // Catatan: aplikasi harus dibuka melalui URL HTTPS, bukan file:/// dari penyimpanan HP.
     const CONFIG = {
       APP_NAME: "CBT Integrated GForm",
       GAS_WEB_APP_URL: "https://script.google.com/macros/s/AKfycbxpt5jhgpFV69cssShSlesrs3mXT-cQ25iqm3lrHGYJ2M-24l8XxKCHh4ov_Ft9KRhN/exec",
@@ -1093,28 +1094,68 @@
     function getDevice(){return [navigator.userAgent,navigator.platform||"",window.innerWidth+"x"+window.innerHeight].join(" | ");}
 
     /*
-      GitHub Pages tidak memiliki google.script.run.
-      API dipanggil ke GAS melalui JSONP agar frontend statis
-      tidak bergantung pada CORS.
+      Koneksi API yang kompatibel dengan GitHub Pages, hosting HTTPS,
+      dan sebagian besar browser HP. Apps Script mengembalikan JSONP,
+      sehingga frontend tidak bergantung pada CORS/fetch.
     */
-    function api(action,payload={}){
+    const API_TIMEOUT_MS=30000;
+    const API_RETRIES=2;
+    let apiRequestNumber=0;
+
+    function getApiUrl(){
+      return String(CONFIG.GAS_WEB_APP_URL||"").trim().replace(/[?&]+$/g,"");
+    }
+    function getConnectionHint(){
+      if(!navigator.onLine)return "HP sedang offline. Aktifkan Wi-Fi/data seluler lalu coba lagi.";
+      if(location.protocol==="file:")return "File dibuka langsung dari penyimpanan HP. Upload HTML ke hosting HTTPS (contoh GitHub Pages), lalu buka URL HTTPS-nya.";
+      return "Periksa internet, matikan VPN/Private DNS/AdBlock, atau coba jaringan lain.";
+    }
+    function apiOnce(action,payload={},attempt=0){
       return new Promise((resolve,reject)=>{
-        const callbackName="cbtCallback_"+Date.now()+"_"+Math.floor(Math.random()*100000);
+        const endpoint=getApiUrl();
+        if(!endpoint){reject(new Error("URL server CBT belum diisi."));return;}
+        const callbackName="cbtCallback_"+Date.now()+"_"+(++apiRequestNumber)+"_"+Math.floor(Math.random()*100000);
         const params=new URLSearchParams();
-        params.set("action",action); params.set("callback",callbackName);
+        params.set("action",action);
+        params.set("callback",callbackName);
+        params.set("_",Date.now().toString());
         Object.keys(payload||{}).forEach(k=>{
           const v=payload[k];
-          if(v!==undefined&&v!==null) params.set(k,typeof v==="object"?JSON.stringify(v):String(v));
+          if(v!==undefined&&v!==null)params.set(k,typeof v==="object"?JSON.stringify(v):String(v));
         });
         const script=document.createElement("script");
+        script.async=true;
+        script.charset="utf-8";
         let finished=false;
-        const cleanup=()=>{if(script.parentNode)script.parentNode.removeChild(script);try{delete window[callbackName];}catch(e){window[callbackName]=undefined;}};
-        const timer=setTimeout(()=>{if(finished)return;finished=true;cleanup();reject(new Error("Server tidak merespons. Periksa URL Web App GAS dan deployment."));},20000);
-        window[callbackName]=data=>{if(finished)return;finished=true;clearTimeout(timer);cleanup();resolve(data);};
-        script.onerror=()=>{if(finished)return;finished=true;clearTimeout(timer);cleanup();reject(new Error("Gagal menghubungi server CBT."));};
-        script.src=CONFIG.GAS_WEB_APP_URL+"?"+params.toString();
+        let timer=null;
+        const cleanup=()=>{
+          if(timer)clearTimeout(timer);
+          if(script.parentNode)script.parentNode.removeChild(script);
+          try{delete window[callbackName];}catch(e){window[callbackName]=undefined;}
+        };
+        const fail=(message)=>{if(finished)return;finished=true;cleanup();reject(new Error(message));};
+        timer=setTimeout(()=>fail("Server terlalu lama merespons. "+getConnectionHint()),API_TIMEOUT_MS);
+        window[callbackName]=data=>{
+          if(finished)return;
+          finished=true;cleanup();
+          if(data&&typeof data==="object")resolve(data);
+          else reject(new Error("Respons server CBT tidak valid."));
+        };
+        script.onerror=()=>fail("Gagal memuat server CBT. "+getConnectionHint());
+        script.src=endpoint+(endpoint.includes("?")?"&":"?")+params.toString();
         document.head.appendChild(script);
       });
+    }
+    async function api(action,payload={}){
+      let lastError;
+      for(let attempt=0;attempt<=API_RETRIES;attempt++){
+        try{return await apiOnce(action,payload,attempt);}
+        catch(err){
+          lastError=err;
+          if(attempt<API_RETRIES)await new Promise(resolve=>setTimeout(resolve,700*(attempt+1)));
+        }
+      }
+      throw lastError||new Error("Gagal menghubungi server CBT.");
     }
 
     async function loadClasses(){
@@ -1439,7 +1480,7 @@
     });
     window.addEventListener("storage",e=>{
       if(e.key!==CONFIG.VIOLATION_STORAGE_KEY)return;
-      if(e.newValue){try{const record=JSON.parse(e.newValue);if(record&&record.locked){playWarningSound();showViolationLock(record);}}catch(err){}}
+      if(e.newValue){try{const record=JSON.parse(e.newValue);if(record&&record.locked){startWarningSound();showViolationLock(record);}}catch(err){}}
       else{$("violationOverlay").classList.remove("active");stopWarningSound();}
     });
 
