@@ -390,18 +390,23 @@
       z-index:1000;
       display:none;
       flex-direction:column;
+      width:100%;
+      height:100vh;
+      height:100dvh;
+      overflow:hidden;
       background:#fff;
     }
     .google-form-overlay.active{display:flex}
     .google-form-toolbar{
-      height:84px;
+      height:auto;
       min-height:84px;
-      flex:0 0 84px;
+      flex:0 0 auto;
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:12px;
       padding:7px 16px;
+      padding-top:max(7px,env(safe-area-inset-top));
       color:#fff;
       background:#102b8f;
       box-shadow:0 2px 12px rgba(4,18,55,.18);
@@ -416,8 +421,8 @@
     .exam-timer strong{font-variant-numeric:tabular-nums;font-size:15px;letter-spacing:.08em}
     .google-form-toolbar-actions{display:flex;gap:8px;align-items:center}
     .google-form-toolbar .btn{width:auto;min-width:132px;padding:0 14px}
-    #googleFormFrame{width:100%;height:auto;flex:1 1 0;min-height:0;border:0;background:#fff}
-    .google-form-footer{min-height:55px;flex:0 0 55px;display:flex;align-items:center;justify-content:center;padding:4px 12px;background:linear-gradient(90deg,#f3f6fc,#fff 50%,#f3f6fc);border-top:1px solid #dbe2f1}
+    #googleFormFrame{display:block;width:100%;height:auto;flex:1 1 auto;min-height:0;border:0;background:#fff;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+    .google-form-footer{min-height:55px;flex:0 0 55px;display:flex;align-items:center;justify-content:center;padding:4px 12px;padding-bottom:max(4px,env(safe-area-inset-bottom));background:linear-gradient(90deg,#f3f6fc,#fff 50%,#f3f6fc);border-top:1px solid #dbe2f1}
     .about-dialog{width:min(430px,calc(100% - 32px));padding:0;border:0;border-radius:20px;background:#fff;box-shadow:0 24px 80px rgba(0,0,0,.35);color:#0d1730}
     .about-dialog::backdrop{background:rgba(4,12,30,.68);backdrop-filter:blur(5px)}
     .about-content{padding:28px;text-align:center}
@@ -456,17 +461,30 @@
     .violation-error{min-height:20px;margin:0 0 10px!important;color:#b3261e!important;font-size:12px!important}
     .violation-card .btn{height:46px}
     .violation-card small{display:block;margin-top:13px;color:#7b8498;font-size:11px;line-height:1.5}
-    @media (max-width:560px){
-      .google-form-toolbar{height:74px;min-height:74px;flex-basis:74px;padding:6px 8px;gap:6px}
-      .google-form-toolbar strong{font-size:11px}
-      .exam-hud{gap:2px}
+    @media (max-width:700px){
+      .google-form-toolbar{
+        display:grid;
+        grid-template-columns:minmax(0,1fr);
+        grid-template-areas:"hud" "actions";
+        align-items:center;
+        gap:6px;
+        min-height:108px;
+        padding:6px 8px;
+        padding-top:max(6px,env(safe-area-inset-top));
+      }
+      .exam-hud-wrap{grid-area:hud;min-width:0;width:100%;gap:8px}
+      .google-form-toolbar-actions{grid-area:actions;width:100%;display:flex;gap:6px}
+      .google-form-toolbar-actions .btn{flex:1 1 0;min-width:0;width:0;height:34px;padding:0 6px;font-size:10px;white-space:nowrap}
+      .google-form-toolbar strong{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .exam-hud{gap:2px;min-width:0}
       .exam-hud-wrap{gap:8px}
-      .exam-hud-brand{width:72px;flex-basis:72px;gap:2px}
+      .exam-hud-brand{width:72px;flex:0 0 72px;gap:2px}
       .exam-hud-logo{width:38px;height:38px;max-width:38px;max-height:38px}
       .exam-hud-student,.exam-timer{font-size:8px}
+      .exam-hud-student{max-width:72px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
       .exam-timer strong{font-size:12px}
-      .google-form-toolbar .btn{min-width:0;padding:0 8px;font-size:9px}
-      .google-form-footer{min-height:51px;flex-basis:51px;padding:3px 8px}
+      .google-form-footer{min-height:39px;flex-basis:39px;padding:2px 8px;padding-bottom:max(2px,env(safe-area-inset-bottom))}
+      .google-form-footer .about-trigger{max-width:230px}
       .about-trigger{gap:7px;padding:6px 12px 6px 7px}
       .about-footer-logo{width:27px;height:27px;flex-basis:27px}
       .about-footer-title{font-size:10px}
