@@ -983,7 +983,7 @@
       </div>
     </div>
     <!-- Iframe dipertahankan pada semua perangkat agar sistem warning perpindahan tab tetap aktif. -->
-    <iframe id="googleFormFrame" title="Formulir ujian CBT" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen"></iframe>
+    <iframe id="googleFormFrame" title="Formulir ujian CBT" loading="eager" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen"></iframe>
     <footer class="google-form-footer">
       <button class="about-trigger" type="button" data-open-about aria-label="Tentang CBT Integrated GForm">
         <img class="about-footer-logo" src="https://yanuar-moga.github.io/cbt/assets/logo.png" alt="">
@@ -1434,6 +1434,9 @@
     function makeEmbeddedFormUrl(url){
       try{
         const formUrl=new URL(url);
+        // Google Forms lebih stabil di iframe jika hanya memakai parameter resmi embedded.
+        // Parameter usp=header/usp=embed_googleplus dapat memicu tampilan fallback di browser mobile.
+        formUrl.search="";
         formUrl.searchParams.set("embedded","true");
         return formUrl.toString();
       }catch(e){return url;}
