@@ -982,6 +982,7 @@
         <button class="btn btn-primary" id="embeddedSubmitButton" type="button">Sudah kirim</button>
       </div>
     </div>
+    <!-- Desktop memakai iframe; mobile diarahkan ke halaman penuh karena Google Form lintas-domain dapat kehilangan stylesheet di iframe. -->
     <iframe id="googleFormFrame" title="Formulir ujian CBT" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen"></iframe>
     <footer class="google-form-footer">
       <button class="about-trigger" type="button" data-open-about aria-label="Tentang CBT Integrated GForm">
@@ -1437,9 +1438,27 @@
         return formUrl.toString();
       }catch(e){return url;}
     }
+    function makeStandaloneFormUrl(url){
+      try{
+        const formUrl=new URL(url);
+        // Mode halaman penuh dipakai di HP/tablet agar CSS Google Forms dimuat normal.
+        formUrl.searchParams.delete("embedded");
+        return formUrl.toString();
+      }catch(e){return url;}
+    }
+    function isMobileFormDevice(){
+      return window.matchMedia("(max-width:700px)").matches || /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
+    }
     function openGoogleForm(){
       const url=state.googleFormUrl||CONFIG.DEFAULT_GOOGLE_FORM_URL;
       if(!url){alert("Link Google Form belum tersedia.");return;}
+      saveState();
+      if(isMobileFormDevice()){
+        // Jangan memaksa Google Form lintas-domain berada di iframe pada mobile.
+        // Navigasi langsung membuat CSS, font, pilihan, dan validasi Google Form tampil normal.
+        window.location.assign(makeStandaloneFormUrl(url));
+        return;
+      }
       $("embeddedFormTitle").textContent="Ujian CBT • "+formatValue(state.jadwal?.mapel);
       $("embeddedStudentName").textContent=formatValue(state.user?.nama)+" • Kelas "+formatValue(state.user?.kelas);
       $("googleFormFrame").src=makeEmbeddedFormUrl(url);
