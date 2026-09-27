@@ -1110,19 +1110,42 @@
       if(location.protocol==="file:")return "File dibuka langsung dari penyimpanan HP. Upload HTML ke hosting HTTPS (contoh GitHub Pages), lalu buka URL HTTPS-nya.";
       return "Periksa internet, matikan VPN/Private DNS/AdBlock, atau coba jaringan lain.";
     }
-    function apiOnce(action,payload={},attempt=0){
+    function makeApiParams(action,payload={}){
+      const params=new URLSearchParams();
+      params.set("action",action);
+      params.set("_",Date.now().toString());
+      Object.keys(payload||{}).forEach(k=>{
+        const v=payload[k];
+        if(v!==undefined&&v!==null)params.set(k,typeof v==="object"?JSON.stringify(v):String(v));
+      });
+      return params;
+    }
+    async function apiJson(action,payload={}){
+      const endpoint=getApiUrl();
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),API_TIMEOUT_MS);
+      try{
+        const response=await fetch(endpoint+"?"+makeApiParams(action,payload).toString(),{
+          method:"GET",
+          mode:"cors",
+          credentials:"omit",
+          cache:"no-store",
+          redirect:"follow",
+          signal:controller.signal,
+          headers:{"Accept":"application/json"}
+        });
+        if(!response.ok)throw new Error("HTTP "+response.status);
+        const data=await response.json();
+        if(!data||typeof data!=="object")throw new Error("Respons JSON tidak valid");
+        return data;
+      }finally{clearTimeout(timer);}
+    }
+    function apiJsonp(action,payload={}){
       return new Promise((resolve,reject)=>{
         const endpoint=getApiUrl();
-        if(!endpoint){reject(new Error("URL server CBT belum diisi."));return;}
         const callbackName="cbtCallback_"+Date.now()+"_"+(++apiRequestNumber)+"_"+Math.floor(Math.random()*100000);
-        const params=new URLSearchParams();
-        params.set("action",action);
+        const params=makeApiParams(action,payload);
         params.set("callback",callbackName);
-        params.set("_",Date.now().toString());
-        Object.keys(payload||{}).forEach(k=>{
-          const v=payload[k];
-          if(v!==undefined&&v!==null)params.set(k,typeof v==="object"?JSON.stringify(v):String(v));
-        });
         const script=document.createElement("script");
         script.async=true;
         script.charset="utf-8";
@@ -1145,6 +1168,15 @@
         script.src=endpoint+(endpoint.includes("?")?"&":"?")+params.toString();
         document.head.appendChild(script);
       });
+    }
+    async function apiOnce(action,payload={},attempt=0){
+      try{
+        // Jalur utama: respons JSON langsung lebih stabil pada Chrome Android/iOS.
+        return await apiJson(action,payload);
+      }catch(fetchError){
+        // Cadangan: tetap dukung JSONP untuk browser lama atau jaringan tertentu.
+        return await apiJsonp(action,payload);
+      }
     }
     async function api(action,payload={}){
       let lastError;
