@@ -982,8 +982,8 @@
         <button class="btn btn-primary" id="embeddedSubmitButton" type="button">Sudah kirim</button>
       </div>
     </div>
-    <!-- Iframe dipertahankan pada semua perangkat agar sistem warning perpindahan tab tetap aktif. -->
-    <iframe id="googleFormFrame" title="Formulir ujian CBT" loading="eager" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen"></iframe>
+    <!-- Desktop memakai iframe; mobile diarahkan ke halaman penuh karena Google Form lintas-domain dapat kehilangan stylesheet di iframe. -->
+    <iframe id="googleFormFrame" title="Formulir ujian CBT" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen"></iframe>
     <footer class="google-form-footer">
       <button class="about-trigger" type="button" data-open-about aria-label="Tentang CBT Integrated GForm">
         <img class="about-footer-logo" src="https://yanuar-moga.github.io/cbt/assets/logo.png" alt="">
@@ -1434,9 +1434,6 @@
     function makeEmbeddedFormUrl(url){
       try{
         const formUrl=new URL(url);
-        // Google Forms lebih stabil di iframe jika hanya memakai parameter resmi embedded.
-        // Parameter usp=header/usp=embed_googleplus dapat memicu tampilan fallback di browser mobile.
-        formUrl.search="";
         formUrl.searchParams.set("embedded","true");
         return formUrl.toString();
       }catch(e){return url;}
@@ -1456,8 +1453,12 @@
       const url=state.googleFormUrl||CONFIG.DEFAULT_GOOGLE_FORM_URL;
       if(!url){alert("Link Google Form belum tersedia.");return;}
       saveState();
-      // Tetap gunakan iframe pada semua perangkat agar visibilitychange,
-      // timer, dan warning perpindahan tab tetap aktif.
+      if(isMobileFormDevice()){
+        // Jangan memaksa Google Form lintas-domain berada di iframe pada mobile.
+        // Navigasi langsung membuat CSS, font, pilihan, dan validasi Google Form tampil normal.
+        window.location.assign(makeStandaloneFormUrl(url));
+        return;
+      }
       $("embeddedFormTitle").textContent="Ujian CBT • "+formatValue(state.jadwal?.mapel);
       $("embeddedStudentName").textContent=formatValue(state.user?.nama)+" • Kelas "+formatValue(state.user?.kelas);
       $("googleFormFrame").src=makeEmbeddedFormUrl(url);
