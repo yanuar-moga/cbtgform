@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#102b8f">
+  <title>CBT Integrated GForm</title>
+
+  <style>
+    :root{
+      --navy:#071737;
+      --navy-2:#102b8f;
+      --blue:#1f50f5;
+      --blue-2:#173bd1;
+      --lime:#c8ff00;
+      --lime-2:#b9f000;
+      --text:#0d1730;
+      --muted:#69738a;
+      --line:#dbe2f1;
+      --soft:#f3f6fc;
+      --white:#fff;
+      --danger:#d93025;
+      --success:#167c4b;
+      --shadow:0 24px 70px rgba(4,18,55,.25);
+      --radius:24px;
+    }
+
+    *{box-sizing:border-box}
+
+    html,body{
+      margin:0;
+      min-height:100%;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 12% 15%,rgba(36,66,190,.38),transparent 23%),
+        radial-gradient(circle at 95% 12%,rgba(200,255,0,.12),transparent 18%),
+        linear-gradient(135deg,#102b68 0%,#07132f 55%,#06132d 100%);
+    }
+
+    body{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      overflow-x:hidden;
+    }
+
+    button,input,select,textarea{font:inherit}
+
+    .app{
+      width:min(1120px,100%);
+      min-height:600px;
+      background:var(--white);
+      border:1px solid rgba(255,255,255,.85);
+      border-radius:var(--radius);
+      overflow:hidden;
+      display:grid;
+      grid-template-columns:1.05fr 1fr;
+      box-shadow:var(--shadow);
+    }
+
+    /* LEFT / BRAND */
+    .brand{
+      position:relative;
+      min-height:600px;
+      padding:48px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      overflow:hidden;
+      color:white;
+      background:
+        radial-gradient(circle at 18% 15%,rgba(200,255,0,.15),transparent 18%),
+        linear-gradient(150deg,#10286e 0%,#173ba9 58%,#1c54f5 100%);
+    }
+
+    .brand:after{
+      content:"";
+      position:absolute;
+      top:-5%;
+      right:-7%;
+      width:20%;
+      height:110%;
+      background:var(--white);
+      clip-path:polygon(36% 0,100% 0,100% 100%,0 100%);
+      opacity:.98;
+    }
+
+    .brand-top,
+    .brand-bottom{
+      position:relative;
+      z-index:2;
+      max-width:430px;
+    }
+
+    .brand-top{
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+
+    .mini-mark{
+      width:48px;
+      height:48px;
+      border-radius:15px;
+      display:grid;
+      place-items:center;
+      font-weight:1000;
+      font-size:18px;
+      letter-spacing:-1px;
+      color:#0c2b98;
+      background:var(--lime);
+      box-shadow:0 10px 30px rgba(0,0,0,.16);
+    }
+    .mini-mark img{width:100%;height:100%;object-fit:contain;border-radius:inherit}
+
+    .brand-school{
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      opacity:.92;
+    }
+
+    .logo{
+      width:180px;
+      height:110px;
+      margin:50px auto 0;
+      position:relative;
+      display:grid;
+      place-items:center;
+      transform:skewX(-6deg);
+    }
+    .logo img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 12px 20px rgba(0,0,0,.18))}
+
+    .logo-ring{
+      position:absolute;
+      width:145px;
+      height:76px;
+      border:8px solid #11c6ff;
+      border-right-color:#0e55e8;
+      border-radius:50%;
+      transform:rotate(-10deg);
+    }
+
+    .logo-core{
+      position:relative;
+      padding:10px 17px 13px;
+      border-radius:48% 52% 48% 52%;
+      background:linear-gradient(145deg,#fff 0 18%,#ffd900 19% 48%,#ef9700 49% 54%,#fff 55% 60%,#1b45cf 61%);
+      color:#1543be;
+      font-weight:1000;
+      font-size:40px;
+      line-height:1;
+      letter-spacing:-4px;
+      text-shadow:0 2px 0 rgba(255,255,255,.7);
+      box-shadow:0 14px 28px rgba(0,0,0,.25);
+    }
+
+    .logo-tag{
+      position:absolute;
+      bottom:2px;
+      padding:4px 13px;
+      border-radius:999px;
+      background:#1238a9;
+      color:#fff;
+      font-size:10px;
+      font-weight:900;
+      letter-spacing:.12em;
+    }
+
+    .eyebrow{
+      color:var(--lime);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      margin:0 0 10px;
+    }
+
+    .brand h1{
+      margin:0 0 12px;
+      font-size:clamp(28px,4vw,42px);
+      line-height:1.02;
+      letter-spacing:-1.7px;
+    }
+
+    .brand p{
+      margin:0;
+      max-width:430px;
+      color:rgba(255,255,255,.78);
+      line-height:1.6;
+      font-size:14px;
+    }
+
+    .version{
+      margin-top:24px;
+      font-size:11px;
+      color:rgba(255,255,255,.58);
+    }
+
+    /* RIGHT / CONTENT */
+    .content{
+      padding:58px clamp(28px,5vw,62px) 34px;
+      background:#fff;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      min-width:0;
+    }
+
+    .content-inner{
+      width:min(100%,430px);
+      margin:0 auto;
+    }
+
+    .title-kicker{
+      margin:0 0 8px;
+      color:#1d55ff;
+      font-size:10px;
+      font-weight:900;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+    }
+
+    .content h2{
+      margin:0;
+      color:#0a1737;
+      font-size:clamp(25px,3vw,34px);
+      letter-spacing:-1.2px;
+      line-height:1.1;
+    }
+
+    .title-line{
+      width:46px;
+      height:5px;
+      border-radius:99px;
+      background:var(--lime);
+      margin:14px 0 28px;
+    }
+
+    .loading-options{color:var(--muted);font-size:12px;margin-top:6px}
+
+    .field{
+      margin-bottom:15px;
+    }
+
+    label{
+      display:block;
+      margin:0 0 7px;
+      font-size:11px;
+      font-weight:800;
+      color:#46516a;
+    }
+
+    .control-wrap{
+      position:relative;
+    }
+
+    input,select,textarea{
+      width:100%;
+      border:1px solid #d4ddef;
+      outline:none;
+      background:#f5f7fc;
+      color:#17213a;
+      border-radius:11px;
+      transition:.18s ease;
+    }
+
+    input,select{
+      height:39px;
+      padding:0 13px;
+      font-size:12px;
+    }
+
+    textarea{
+      min-height:100px;
+      padding:12px 13px;
+      resize:vertical;
+      font-size:13px;
+    }
+
+    input:focus,select:focus,textarea:focus{
+      border-color:#4c70ff;
+      background:#fff;
+      box-shadow:0 0 0 3px rgba(31,80,245,.10);
+    }
+
+    .password-row{
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+
+    .password-row input{flex:1}
+
+    .toggle-pass{
+      width:39px;
+      height:39px;
+      flex:0 0 39px;
+      border:1px solid #d4ddef;
+      border-radius:11px;
+      background:#f5f7fc;
+      cursor:pointer;
+      color:#546078;
+    }
+
+    .check{
+      display:flex;
+      align-items:center;
+      gap:7px;
+      margin:7px 0 15px;
+      color:#66718a;
+      font-size:10px;
+      cursor:pointer;
+    }
+
+    .check input{
+      width:13px;
+      height:13px;
+      accent-color:#1f50f5;
+    }
+
+    .btn{
+      width:100%;
+      border:0;
+      border-radius:11px;
+      height:39px;
+      font-size:12px;
+      font-weight:900;
+      cursor:pointer;
+      transition:transform .12s ease,filter .12s ease,box-shadow .12s ease;
+    }
+
+    .btn:hover{filter:brightness(.98)}
+    .btn:active{transform:translateY(1px)}
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+
+    .btn-primary{
+      color:#07152d;
+      background:linear-gradient(180deg,#d2ff19,#baff00);
+      box-shadow:0 9px 24px rgba(188,244,0,.22);
+    }
+
+    .btn-blue{
+      margin-top:0;
+      color:#fff;
+      background:linear-gradient(180deg,#2856ff,#1c4ced);
+    }
+
+    .btn-secondary{
+      color:#243452;
+      background:#dce3f1;
+      border:1px solid #c9d3e7;
+    }
+
+    .stack{display:grid;gap:9px}
+
+    .footer{
+      margin-top:38px;
+      text-align:center;
+      font-size:8px;
+      color:#9aa4b8;
+    }
+
+    .footer strong{
+      color:#1f50f5;
+      font-weight:900;
+    }
+    .about-trigger{position:relative;isolation:isolate;overflow:hidden;display:inline-flex;align-items:center;gap:9px;max-width:min(100%,360px);padding:7px 15px 7px 8px;border:1px solid rgba(31,80,245,.15);border-radius:999px;background:linear-gradient(135deg,#fff 0%,#f4f7ff 55%,#eef3ff 100%);box-shadow:0 5px 16px rgba(16,43,143,.08);color:#173b9b;font:inherit;text-align:left;cursor:pointer;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease,background .22s ease}
+    .about-trigger:focus-visible{outline:3px solid rgba(31,80,245,.28);outline-offset:3px}
+    .about-trigger::after{content:"";position:absolute;z-index:-1;inset:-40% auto -40% -45%;width:35%;transform:skewX(-24deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);opacity:0}
+    .about-trigger:hover,.about-trigger:focus-visible{transform:translateY(-2px);border-color:rgba(31,80,245,.38);background:linear-gradient(135deg,#fff 0%,#f3f7ff 55%,#e8efff 100%);box-shadow:0 10px 24px rgba(16,43,143,.17)}
+    .about-trigger:hover::after,.about-trigger:focus-visible::after{animation:aboutShine .8s ease forwards;opacity:1}
+    .about-trigger:hover .about-footer-logo,.about-trigger:focus-visible .about-footer-logo{transform:rotate(-7deg) scale(1.08);box-shadow:0 5px 12px rgba(16,43,143,.2)}
+    .about-footer-logo{width:31px;height:31px;flex:0 0 31px;object-fit:contain;border-radius:50%;background:#fff;box-shadow:0 2px 7px rgba(16,43,143,.12);transition:transform .22s ease,box-shadow .22s ease}
+    .about-footer-title{font-size:11px;font-weight:900;line-height:1.15;white-space:nowrap;letter-spacing:.01em}
+    @keyframes aboutShine{0%{left:-45%;opacity:0}20%{opacity:1}100%{left:125%;opacity:0}}
+    .app-footer{display:flex;justify-content:center;padding:14px 12px 8px;text-align:center}
+
+    /* SCREENS */
+    .screen{display:none}
+    .screen.active{display:block}
+
+    .google-form-overlay{
+      position:fixed;
+      inset:0;
+      z-index:1000;
+      display:none;
+      flex-direction:column;
+      background:#fff;
+    }
+    .google-form-overlay.active{display:flex}
+    .google-form-toolbar{
+      height:84px;
+      min-height:84px;
+      flex:0 0 84px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:7px 16px;
+      color:#fff;
+      background:#102b8f;
+      box-shadow:0 2px 12px rgba(4,18,55,.18);
+    }
+    .google-form-toolbar strong{font-size:13px}
+    .exam-hud-wrap{display:flex;align-items:center;gap:14px;min-width:0}
+    .exam-hud-brand{width:94px;flex:0 0 94px;display:flex;flex-direction:column;align-items:center;gap:3px}
+    .exam-hud-logo{display:block;width:48px;height:48px;max-width:48px;max-height:48px;object-fit:contain;border-radius:7px;background:#fff}
+    .exam-hud-student{max-width:100%;font-size:9px;line-height:1.15;color:rgba(255,255,255,.9);text-align:center;overflow-wrap:anywhere}
+    .exam-hud{display:flex;flex-direction:column;gap:5px;min-width:0}
+    .exam-timer{display:flex;align-items:center;gap:7px;color:#d2ff19;font-size:11px;font-weight:900;letter-spacing:.06em}
+    .exam-timer strong{font-variant-numeric:tabular-nums;font-size:15px;letter-spacing:.08em}
+    .google-form-toolbar-actions{display:flex;gap:8px;align-items:center}
+    .google-form-toolbar .btn{width:auto;min-width:132px;padding:0 14px}
+    #googleFormFrame{width:100%;height:auto;flex:1 1 0;min-height:0;border:0;background:#fff}
+    .google-form-footer{min-height:55px;flex:0 0 55px;display:flex;align-items:center;justify-content:center;padding:4px 12px;background:linear-gradient(90deg,#f3f6fc,#fff 50%,#f3f6fc);border-top:1px solid #dbe2f1}
+    .about-dialog{width:min(430px,calc(100% - 32px));padding:0;border:0;border-radius:20px;background:#fff;box-shadow:0 24px 80px rgba(0,0,0,.35);color:#0d1730}
+    .about-dialog::backdrop{background:rgba(4,12,30,.68);backdrop-filter:blur(5px)}
+    .about-content{padding:28px;text-align:center}
+    .about-logo{width:88px;height:88px;object-fit:contain;margin:0 auto 12px}
+    .about-content h2{margin:0 0 9px;font-size:22px;color:#102b8f}
+    .about-content p{margin:5px 0;color:#526079;font-size:13px;line-height:1.5}
+    .about-content .about-version{color:#0d1730;font-weight:900}
+    .about-close{margin-top:19px}
+    .schedule-dialog{width:min(780px,calc(100% - 24px));max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px);padding:0;border:0;border-radius:20px;background:#fff;box-shadow:0 24px 80px rgba(0,0,0,.35);color:#152443;overflow:hidden}
+    .schedule-dialog::backdrop{background:rgba(4,12,30,.72);backdrop-filter:blur(5px)}
+    .schedule-dialog-inner{max-height:inherit;display:flex;flex-direction:column}
+    .schedule-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:22px 24px 17px;background:linear-gradient(120deg,#102b8f,#214de0);color:#fff}
+    .schedule-dialog-head h2{margin:0;font-size:21px}
+    .schedule-dialog-head p{margin:5px 0 0;color:rgba(255,255,255,.78);font-size:12px}
+    .schedule-close{width:34px;height:34px;flex:0 0 34px;border:1px solid rgba(255,255,255,.3);border-radius:50%;background:rgba(255,255,255,.12);color:#fff;font-size:20px;cursor:pointer;transition:transform .18s ease,background .18s ease}
+    .schedule-close:hover{transform:rotate(90deg);background:rgba(255,255,255,.24)}
+    .schedule-dialog-body{padding:18px 22px 22px;overflow:auto}
+    .schedule-message{margin:0 0 12px;padding:11px 13px;border-radius:10px;background:#f2f5fb;color:#58657c;font-size:12px}
+    .schedule-message.error{background:#fff0ef;color:#a3312b}
+    .schedule-table-wrap{max-height:55vh;overflow:auto;border:1px solid #e1e7f2;border-radius:12px}
+    .schedule-table{width:100%;min-width:590px;border-collapse:separate;border-spacing:0;font-size:12px}
+    .schedule-table th{position:sticky;top:0;padding:12px 13px;background:#f1f4fb;color:#53617a;font-size:10px;letter-spacing:.06em;text-align:left;text-transform:uppercase;border-bottom:1px solid #e1e7f2}
+    .schedule-table td{padding:13px;border-bottom:1px solid #edf0f6;color:#263653}
+    .schedule-table tbody tr:nth-child(even){background:#fafbfe}
+    .schedule-table tbody tr:last-child td{border-bottom:0}
+    .schedule-table .schedule-time{font-variant-numeric:tabular-nums;font-weight:800;color:#173b9b;white-space:nowrap}
+    .violation-overlay{position:fixed;inset:0;z-index:3000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,12,30,.88);backdrop-filter:blur(8px)}
+    .violation-overlay.active{display:flex}
+    .violation-card{width:min(480px,100%);padding:28px;border:1px solid #ffd1ce;border-radius:20px;background:#fff;box-shadow:0 30px 100px rgba(0,0,0,.4);text-align:center}
+    .violation-mark{width:56px;height:56px;margin:0 auto 16px;border-radius:50%;display:grid;place-items:center;color:#fff;background:#d93025;font-size:30px;font-weight:900}
+    .violation-card h2{margin:0 0 10px;color:#9f1d16;font-size:25px}
+    .violation-card p{margin:0 0 18px;color:#46516a;font-size:14px;line-height:1.6}
+    .violation-count{display:inline-block;margin-bottom:18px;padding:7px 12px;border-radius:999px;background:#fff0ef;color:#9f1d16;font-size:12px;font-weight:900}
+    .violation-card label{text-align:left}
+    .violation-card input{height:46px;margin-bottom:10px;font-size:16px;letter-spacing:.2em;text-align:center}
+    .violation-error{min-height:20px;margin:0 0 10px!important;color:#b3261e!important;font-size:12px!important}
+    .violation-card .btn{height:46px}
+    .violation-card small{display:block;margin-top:13px;color:#7b8498;font-size:11px;line-height:1.5}
+    @media (max-width:560px){
+      .google-form-toolbar{height:74px;min-height:74px;flex-basis:74px;padding:6px 8px;gap:6px}
+      .google-form-toolbar strong{font-size:11px}
+      .exam-hud{gap:2px}
+      .exam-hud-wrap{gap:8px}
+      .exam-hud-brand{width:72px;flex-basis:72px;gap:2px}
+      .exam-hud-logo{width:38px;height:38px;max-width:38px;max-height:38px}
+      .exam-hud-student,.exam-timer{font-size:8px}
+      .exam-timer strong{font-size:12px}
+      .google-form-toolbar .btn{min-width:0;padding:0 8px;font-size:9px}
+      .google-form-footer{min-height:51px;flex-basis:51px;padding:3px 8px}
+      .about-trigger{gap:7px;padding:6px 12px 6px 7px}
+      .about-footer-logo{width:27px;height:27px;flex-basis:27px}
+      .about-footer-title{font-size:10px}
+      .schedule-dialog-head{padding:18px 16px 14px}
+      .schedule-dialog-head h2{font-size:18px}
+      .schedule-dialog-body{padding:14px 12px 16px}
+      .violation-card{padding:23px 18px}
+      .violation-card h2{font-size:22px}
+    }
+
+    @media (prefers-reduced-motion:reduce){
+      .about-trigger,.about-footer-logo{transition:none}
+      .about-trigger:hover::after,.about-trigger:focus-visible::after{animation:none}
+    }
+
+    .panel{
+      background:#f7f9fd;
+      border:1px solid #e1e6f1;
+      border-radius:16px;
+      padding:18px;
+      margin:18px 0;
+    }
+
+    .summary{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .summary-item{
+      background:#fff;
+      border:1px solid #e3e8f2;
+      border-radius:12px;
+      padding:11px;
+    }
+
+    .summary-item small{
+      display:block;
+      color:#8992a5;
+      font-size:9px;
+      margin-bottom:4px;
+    }
+
+    .summary-item strong{
+      display:block;
+      font-size:12px;
+      overflow-wrap:anywhere;
+    }
+
+    .notice{
+      padding:12px 14px;
+      border-radius:11px;
+      background:#edf3ff;
+      color:#29447f;
+      font-size:11px;
+      line-height:1.55;
+    }
+
+    .notice.success{
+      background:#eaf8f1;
+      color:#176a46;
+    }
+
+    .notice.error{
+      background:#fff0ef;
+      color:#9a2d26;
+    }
+
+    .form-actions{
+      display:grid;
+      gap:9px;
+      margin-top:16px;
+    }
+
+    .rating-group{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:7px;
+    }
+
+    .rating-option{
+      position:relative;
+    }
+
+    .rating-option input{
+      position:absolute;
+      opacity:0;
+      pointer-events:none;
+    }
+
+    .rating-option label{
+      margin:0;
+      height:42px;
+      display:grid;
+      place-items:center;
+      border:1px solid #d8dfed;
+      background:#f7f9fd;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:900;
+      color:#56617a;
+    }
+
+    .rating-option input:checked + label{
+      color:#102b8f;
+      border-color:#7d9aff;
+      background:#eaf0ff;
+      box-shadow:0 0 0 2px rgba(31,80,245,.08);
+    }
+
+    .top-user{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:18px;
+    }
+
+    .user-chip{
+      min-width:0;
+    }
+
+    .user-chip strong{
+      display:block;
+      font-size:13px;
+    }
+
+    .user-chip span{
+      color:#7a8499;
+      font-size:10px;
+    }
+
+    .link-btn{
+      border:0;
+      background:transparent;
+      color:#1f50f5;
+      font-weight:900;
+      font-size:10px;
+      cursor:pointer;
+      padding:7px;
+    }
+
+    .loading{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+    }
+
+    .spinner{
+      width:13px;
+      height:13px;
+      border:2px solid rgba(0,0,0,.15);
+      border-top-color:currentColor;
+      border-radius:50%;
+      animation:spin .7s linear infinite;
+    }
+
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* TABLET */
+    @media (max-width:900px){
+      body{padding:16px}
+      .app{
+        grid-template-columns:1fr;
+        max-width:680px;
+        min-height:0;
+      }
+
+      .brand{
+        min-height:280px;
+        padding:30px 32px;
+      }
+
+      .brand:after{display:none}
+
+      .logo{
+        position:absolute;
+        right:30px;
+        top:48px;
+        margin:0;
+        transform:scale(.78) skewX(-6deg);
+        transform-origin:right top;
+      }
+
+      .brand-bottom{max-width:58%}
+      .brand h1{font-size:30px}
+      .content{padding:34px 32px 28px}
+    }
+
+    /* PHONE */
+    @media (max-width:560px){
+      body{
+        padding:0;
+        align-items:stretch;
+        background:#fff;
+      }
+
+      .app{
+        width:100%;
+        min-height:100vh;
+        border:0;
+        border-radius:0;
+        box-shadow:none;
+      }
+
+      .brand{
+        min-height:225px;
+        padding:24px 22px;
+      }
+
+      .brand-top{gap:10px}
+      .mini-mark{width:38px;height:38px;border-radius:12px;font-size:14px}
+      .brand-school{font-size:9px}
+
+      .logo{
+        width:130px;
+        height:80px;
+        right:14px;
+        top:25px;
+        transform:scale(.62) skewX(-6deg);
+      }
+
+      .brand-bottom{
+        max-width:100%;
+        margin-top:auto;
+      }
+
+      .brand h1{
+        font-size:25px;
+        margin-bottom:7px;
+      }
+
+      .brand p{
+        font-size:11px;
+        max-width:62%;
+        line-height:1.45;
+      }
+
+      .version{margin-top:10px;font-size:9px}
+
+      .content{
+        padding:28px 20px 24px;
+        justify-content:flex-start;
+      }
+
+      .content h2{font-size:25px}
+      .title-line{margin-bottom:23px}
+
+      input,select{height:45px}
+      .toggle-pass{height:45px;flex-basis:45px}
+      .btn{height:45px}
+
+      .summary{grid-template-columns:1fr}
+      .panel{padding:14px}
+      .rating-group{gap:5px}
+      .rating-option label{height:40px}
+
+      .footer{margin-top:30px}
+    }
+
+    @media (max-width:360px){
+      .brand{min-height:205px}
+      .brand p{max-width:58%}
+      .logo{right:2px;transform:scale(.53) skewX(-6deg)}
+      .content{padding-left:16px;padding-right:16px}
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <!-- BRAND -->
+    <section class="brand">
+      <div class="brand-top">
+        <div class="mini-mark"><img src="https://yanuar-moga.github.io/cbt/assets/logo.png" alt="Logo CBT Integrated GForm"></div>
+        <div class="brand-school">Tes Kemampuan Akademik • 2026</div>
+      </div>
+
+      <div class="logo" aria-label="Logo CBT Integrated GForm">
+        <img src="https://yanuar-moga.github.io/cbt/assets/logo.png" alt="Logo CBT Integrated GForm">
+      </div>
+
+      <div class="brand-bottom">
+        <p class="eyebrow">Tes Kemampuan Akademik</p>
+        <h1>Computer Based Test</h1>
+        <p>Platform asesmen digital untuk pelaksanaan ujian yang terstruktur, aman, dan mudah digunakan.</p>
+        <div class="version">CBT Integrated GForm • v1.0</div>
+      </div>
+    </section>
+
+    <!-- CONTENT -->
+    <section class="content">
+      <div class="content-inner">
+
+        <!-- LOGIN -->
+        <section id="loginScreen" class="screen active">
+          <p class="title-kicker">Tes Kemampuan Akademik • 2026</p>
+          <h2>Computer Based Test</h2>
+          <div class="title-line"></div>
+
+          <div id="loginMessage" class="notice error" style="display:none"></div>
+
+          <form id="loginForm" novalidate>
+            <div class="field">
+              <label for="kelas">Kelas</label>
+              <select id="kelas" required><option value="">Memuat daftar kelas...</option></select>
+            </div>
+
+            <div class="field">
+              <label for="username">Username</label>
+              <select id="username" autocomplete="username" required disabled><option value="">Pilih kelas terlebih dahulu</option></select>
+            </div>
+
+            <div class="field">
+              <label for="password">Password</label>
+              <div class="password-row">
+                <input id="password" type="password" autocomplete="current-password" placeholder="Masukkan password" required>
+                <button class="toggle-pass" type="button" id="togglePassword" aria-label="Tampilkan password">◉</button>
+              </div>
+            </div>
+
+            <label class="check">
+              <input type="checkbox" id="showPassword">
+              Tampilkan Password
+            </label>
+
+            <div class="field">
+              <label for="token">Token</label>
+              <input id="token" type="text" autocomplete="off" placeholder="Masukkan token" required>
+            </div>
+
+            <div class="stack">
+              <button class="btn btn-primary" id="loginButton" type="submit">Masuk</button>
+              <button class="btn btn-blue" type="button" id="scheduleButton">Lihat Jadwal Token</button>
+              <button class="btn btn-secondary" type="button" id="resetButton">Reset Login / Sesi</button>
+            </div>
+          </form>
+
+        </section>
+
+        <!-- EXAM PREVIEW -->
+        <section id="examScreen" class="screen">
+          <div class="top-user">
+            <div class="user-chip">
+              <strong id="examName">-</strong>
+              <span id="examClass">-</span>
+            </div>
+            <button class="link-btn" id="logoutBeforeExam">Keluar</button>
+          </div>
+
+          <p class="title-kicker">VERIFIKASI SESI</p>
+          <h2 id="examMapel">Ujian</h2>
+          <div class="title-line"></div>
+
+          <div class="panel">
+            <div class="summary">
+              <div class="summary-item"><small>Kelas</small><strong id="sumKelas">-</strong></div>
+              <div class="summary-item"><small>Mata Pelajaran</small><strong id="sumMapel">-</strong></div>
+              <div class="summary-item"><small>Mulai</small><strong id="sumMulai">-</strong></div>
+              <div class="summary-item"><small>Selesai</small><strong id="sumSelesai">-</strong></div>
+            </div>
+          </div>
+
+          <div class="notice">
+            Pastikan data dan jadwal sudah benar. Tombol <b>Mulai Ujian</b> akan membuka Google Form yang ditentukan pada sheet JADWAL.
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" id="startExamButton">Mulai Ujian</button>
+            <button class="btn btn-secondary" id="backLoginButton">Kembali ke Login</button>
+          </div>
+
+          <div class="footer"><strong>CBT Integrated GForm</strong></div>
+        </section>
+
+        <!-- RUNNING EXAM -->
+        <section id="runningScreen" class="screen">
+          <p class="title-kicker">UJIAN BERLANGSUNG</p>
+          <h2 id="runningMapel">Ujian</h2>
+          <div class="title-line"></div>
+
+          <div class="notice success">
+            Selesaikan dan kirim seluruh jawaban pada Google Form yang dibuka di halaman CBT ini. Setelah terkirim, tekan <b>Sudah Kirim Jawaban</b>.
+          </div>
+
+          <div class="panel">
+            <div class="summary">
+              <div class="summary-item"><small>Peserta</small><strong id="runningName">-</strong></div>
+              <div class="summary-item"><small>Kelas</small><strong id="runningClass">-</strong></div>
+              <div class="summary-item"><small>Mulai</small><strong id="runningStart">-</strong></div>
+              <div class="summary-item"><small>Selesai</small><strong id="runningEnd">-</strong></div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-blue" id="openFormButton">Tampilkan Google Form</button>
+            <button class="btn btn-primary" id="submitFormButton">Sudah Kirim Jawaban</button>
+            <button class="btn btn-secondary" id="logoutRunningButton">Keluar</button>
+          </div>
+
+          <div class="footer">Status sesi dicatat pada sheet <strong>SESI</strong> dan aktivitas pada <strong>LOG_AKTIVITAS</strong>.</div>
+        </section>
+
+        <!-- QUESTIONNAIRE -->
+        <section id="questionnaireScreen" class="screen">
+          <p class="title-kicker">EVALUASI</p>
+          <h2>Kuesioner Singkat</h2>
+          <div class="title-line"></div>
+
+          <div id="questionMessage" class="notice" style="margin-bottom:16px">
+            Berikan penilaian setelah menyelesaikan CBT.
+          </div>
+
+          <form id="questionnaireForm">
+            <div class="field">
+              <label>Rating kemudahan aplikasi</label>
+              <div class="rating-group">
+                <div class="rating-option"><input id="app1" type="radio" name="ratingAplikasi" value="1"><label for="app1">1</label></div>
+                <div class="rating-option"><input id="app2" type="radio" name="ratingAplikasi" value="2"><label for="app2">2</label></div>
+                <div class="rating-option"><input id="app3" type="radio" name="ratingAplikasi" value="3"><label for="app3">3</label></div>
+                <div class="rating-option"><input id="app4" type="radio" name="ratingAplikasi" value="4"><label for="app4">4</label></div>
+                <div class="rating-option"><input id="app5" type="radio" name="ratingAplikasi" value="5"><label for="app5">5</label></div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Rating kemudahan soal</label>
+              <div class="rating-group">
+                <div class="rating-option"><input id="soal1" type="radio" name="ratingSoal" value="1"><label for="soal1">1</label></div>
+                <div class="rating-option"><input id="soal2" type="radio" name="ratingSoal" value="2"><label for="soal2">2</label></div>
+                <div class="rating-option"><input id="soal3" type="radio" name="ratingSoal" value="3"><label for="soal3">3</label></div>
+                <div class="rating-option"><input id="soal4" type="radio" name="ratingSoal" value="4"><label for="soal4">4</label></div>
+                <div class="rating-option"><input id="soal5" type="radio" name="ratingSoal" value="5"><label for="soal5">5</label></div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="saran">Saran / masukan (opsional)</label>
+              <textarea id="saran" maxlength="1000" placeholder="Tuliskan saran atau kendala selama menggunakan CBT..."></textarea>
+            </div>
+
+            <button class="btn btn-primary" type="submit" id="questionnaireButton">Kirim Kuesioner</button>
+          </form>
+
+          <div class="footer"><strong>Terima kasih telah mengikuti asesmen.</strong></div>
+        </section>
+
+        <!-- FINISH -->
+        <section id="finishScreen" class="screen">
+          <p class="title-kicker">SELESAI</p>
+          <h2>Ujian Berhasil Dicatat</h2>
+          <div class="title-line"></div>
+
+          <div class="notice success">
+            Kuesioner berhasil disimpan dan sesi CBT telah ditandai selesai.
+          </div>
+
+          <div class="panel">
+            <div class="summary">
+              <div class="summary-item"><small>Peserta</small><strong id="finishName">-</strong></div>
+              <div class="summary-item"><small>Kelas</small><strong id="finishClass">-</strong></div>
+              <div class="summary-item"><small>Mata Pelajaran</small><strong id="finishMapel">-</strong></div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" id="finishButton">Kembali ke Login</button>
+
+          <div class="footer"><strong>CBT Integrated GForm</strong><br>Silakan mengikuti instruksi berikutnya.</div>
+        </section>
+
+      </div>
+      <footer class="app-footer">
+        <button class="about-trigger" type="button" data-open-about aria-label="Tentang CBT Integrated GForm">
+          <img class="about-footer-logo" src="https://yanuar-moga.github.io/cbt/assets/logo.png" alt="">
+          <span class="about-footer-title">CBT Integrated GForm</span>
+        </button>
+      </footer>
+    </section>
+  </main>
+
+  <section id="googleFormOverlay" class="google-form-overlay" aria-hidden="true" aria-label="Google Form ujian">
+    <div class="google-form-toolbar">
+      <div class="exam-hud-wrap">
+        <div class="exam-hud-brand">
+          <img class="exam-hud-logo" src="https://yanuar-moga.github.io/cbt/assets/logo.png" alt="Logo CBT Integrated GForm">
+          <span id="embeddedStudentName" class="exam-hud-student">-</span>
+        </div>
+        <div class="exam-hud">
+          <strong id="embeddedFormTitle">Ujian CBT</strong>
+          <span class="exam-timer"><span>SISA WAKTU</span><strong id="examTimer">--:--:--</strong></span>
+        </div>
+      </div>
+      <div class="google-form-toolbar-actions">
+        <button class="btn btn-secondary" id="closeEmbeddedFormButton" type="button">Kembali ke CBT</button>
+        <button class="btn btn-primary" id="embeddedSubmitButton" type="button">Sudah kirim</button>
+      </div>
+    </div>
+    <iframe id="googleFormFrame" title="Formulir ujian CBT" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen"></iframe>
+    <footer class="google-form-footer">
+      <button class="about-trigger" type="button" data-open-about aria-label="Tentang CBT Integrated GForm">
+        <img class="about-footer-logo" src="https://yanuar-moga.github.io/cbt/assets/logo.png" alt="">
+        <span class="about-footer-title">CBT Integrated GForm</span>
+      </button>
+    </footer>
+  </section>
+
+  <dialog id="scheduleDialog" class="schedule-dialog" aria-labelledby="scheduleTitle">
+    <div class="schedule-dialog-inner">
+      <header class="schedule-dialog-head">
+        <div>
+          <h2 id="scheduleTitle">Jadwal Ujian</h2>
+          <p>Informasi jadwal Ujian</p>
+        </div>
+        <button id="closeScheduleButton" class="schedule-close" type="button" aria-label="Tutup jadwal">×</button>
+      </header>
+      <div class="schedule-dialog-body">
+        <p id="scheduleStatus" class="schedule-message" role="status">Memuat jadwal...</p>
+        <div class="schedule-table-wrap">
+          <table class="schedule-table">
+            <thead><tr><th>Tanggal</th><th>Kelas</th><th>Mapel</th><th>Mulai</th><th>Selesai</th></tr></thead>
+            <tbody id="scheduleRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="aboutDialog" class="about-dialog" aria-labelledby="aboutTitle">
+    <div class="about-content">
+      <img class="about-logo" src="https://yanuar-moga.github.io/cbt/assets/logo.png" alt="Logo aplikasi CBT">
+      <h2 id="aboutTitle">CBT Integrated GForm</h2>
+      <p class="about-version">Versi aplikasi V 1.0</p>
+      <p>Build 27 September 2026</p>
+      <p>Develop by MB</p>
+      <button id="closeAboutButton" class="btn btn-primary about-close" type="button">Tutup</button>
+    </div>
+  </dialog>
+
+  <audio id="warningAudio" src="https://yanuar-moga.github.io/cbt/assets/warning.mp3" preload="auto"></audio>
+
+  <section id="violationOverlay" class="violation-overlay" role="alertdialog" aria-modal="true" aria-labelledby="violationTitle" aria-describedby="violationDescription">
+    <div class="violation-card">
+      <div class="violation-mark" aria-hidden="true">!</div>
+      <h2 id="violationTitle">PELANGGARAN TERDETEKSI</h2>
+      <p id="violationDescription">Anda meninggalkan halaman ujian atau membuka tab/jendela lain. Peringatan ini tetap terkunci meskipun halaman dimuat ulang.</p>
+      <div class="violation-count" id="violationCount">Pelanggaran 1</div>
+      <form id="adminPinForm">
+        <label for="adminPinInput">Masukkan PIN Admin untuk melanjutkan</label>
+        <input id="adminPinInput" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="PIN Admin" required>
+        <p id="adminPinError" class="violation-error" aria-live="polite"></p>
+        <button class="btn btn-primary" type="submit">Verifikasi PIN Admin</button>
+      </form>
+      <small>Jangan tutup atau muat ulang halaman. Minta bantuan pengawas jika Anda belum memperoleh izin.</small>
+    </div>
+  </section>
+
+  <script>
+    const CONFIG = {
+      APP_NAME: "CBT Integrated GForm",
+      GAS_WEB_APP_URL: "https://script.google.com/macros/s/AKfycbxpt5jhgpFV69cssShSlesrs3mXT-cQ25iqm3lrHGYJ2M-24l8XxKCHh4ov_Ft9KRhN/exec",
+      DEFAULT_GOOGLE_FORM_URL: "https://docs.google.com/forms/d/e/1FAIpQLSdwBS3rLkjRjn8fuw-eArPhGHwVI6BuqWM8MuICHZ4kjlacLg/viewform?usp=header",
+      ADMIN_PIN: "1212",
+      VIOLATION_STORAGE_KEY: "cbt_exam_violation_v1"
+    };
+
+    const state = { sessionId:"", user:null, jadwal:null, googleFormUrl:"", examActive:false, examTimerId:null };
+    let warningAudioUnlocked=false;
+    let warningSoundPending=false;
+    const $ = id => document.getElementById(id);
+
+    function unlockWarningAudio(){
+      const audio=$("warningAudio");
+      if(!audio)return;
+      if($("violationOverlay").classList.contains("active")){startWarningSound();return;}
+      if(warningAudioUnlocked)return;
+      audio.muted=true;
+      const attempt=audio.play();
+      if(attempt&&typeof attempt.then==="function"){
+        attempt.then(()=>{audio.pause();audio.currentTime=0;audio.muted=false;warningAudioUnlocked=true;}).catch(()=>{audio.muted=false;});
+      }else{audio.pause();audio.currentTime=0;audio.muted=false;warningAudioUnlocked=true;}
+    }
+    function startWarningSound(){
+      const audio=$("warningAudio");
+      if(!audio)return;
+      if(!audio.paused&&!audio.ended)return;
+      audio.currentTime=0;audio.muted=false;audio.volume=1;audio.loop=true;
+      const attempt=audio.play();
+      if(attempt&&typeof attempt.then==="function")attempt.then(()=>{warningSoundPending=false;warningAudioUnlocked=true;}).catch(()=>{warningSoundPending=true;});
+    }
+    function stopWarningSound(){
+      const audio=$("warningAudio");
+      if(!audio)return;
+      audio.loop=false;audio.pause();audio.currentTime=0;warningSoundPending=false;
+    }
+
+    document.addEventListener("pointerdown",unlockWarningAudio,{capture:true});
+    document.addEventListener("keydown",unlockWarningAudio,{capture:true});
+
+    function showScreen(id){
+      document.querySelectorAll(".screen").forEach(el=>el.classList.remove("active"));
+      const el=$(id); if(el) el.classList.add("active");
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
+    function setMessage(id,message,type="error"){
+      const el=$(id); if(!el)return;
+      el.textContent=message; el.className="notice "+type; el.style.display="block";
+    }
+    function hideMessage(id){ const el=$(id); if(el)el.style.display="none"; }
+    function setButtonLoading(button,loading,text){
+      if(!button)return;
+      if(loading){button.disabled=true;button.dataset.originalText=button.textContent;button.innerHTML='<span class="loading"><span class="spinner"></span>'+text+'</span>';}
+      else{button.disabled=false;button.textContent=button.dataset.originalText||text||"Simpan";}
+    }
+    function formatValue(v){return v===null||v===undefined||v===""?"-":String(v);}
+    function formatTimeValue(value){
+      if(value===null||value===undefined||value==="")return "-";
+      const text=String(value).trim();
+      const direct=text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?/);
+      if(direct)return String(direct[1]).padStart(2,"0")+":"+direct[2];
+      const date=new Date(text);
+      if(Number.isNaN(date.getTime()))return text;
+      return new Intl.DateTimeFormat("id-ID",{timeZone:"Asia/Jakarta",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(date);
+    }
+    function getDevice(){return [navigator.userAgent,navigator.platform||"",window.innerWidth+"x"+window.innerHeight].join(" | ");}
+
+    /*
+      GitHub Pages tidak memiliki google.script.run.
+      API dipanggil ke GAS melalui JSONP agar frontend statis
+      tidak bergantung pada CORS.
+    */
+    function api(action,payload={}){
+      return new Promise((resolve,reject)=>{
+        const callbackName="cbtCallback_"+Date.now()+"_"+Math.floor(Math.random()*100000);
+        const params=new URLSearchParams();
+        params.set("action",action); params.set("callback",callbackName);
+        Object.keys(payload||{}).forEach(k=>{
+          const v=payload[k];
+          if(v!==undefined&&v!==null) params.set(k,typeof v==="object"?JSON.stringify(v):String(v));
+        });
+        const script=document.createElement("script");
+        let finished=false;
+        const cleanup=()=>{if(script.parentNode)script.parentNode.removeChild(script);try{delete window[callbackName];}catch(e){window[callbackName]=undefined;}};
+        const timer=setTimeout(()=>{if(finished)return;finished=true;cleanup();reject(new Error("Server tidak merespons. Periksa URL Web App GAS dan deployment."));},20000);
+        window[callbackName]=data=>{if(finished)return;finished=true;clearTimeout(timer);cleanup();resolve(data);};
+        script.onerror=()=>{if(finished)return;finished=true;clearTimeout(timer);cleanup();reject(new Error("Gagal menghubungi server CBT."));};
+        script.src=CONFIG.GAS_WEB_APP_URL+"?"+params.toString();
+        document.head.appendChild(script);
+      });
+    }
+
+    async function loadClasses(){
+      const select=$("kelas");
+      select.disabled=true;
+      select.innerHTML='<option value="">Memuat daftar kelas...</option>';
+      try{
+        const data=await api("getClasses");
+        if(!data.success) throw new Error(data.message||"Gagal memuat kelas.");
+        const classes=Array.isArray(data.classes)?data.classes:[];
+        select.innerHTML='<option value="">-- Pilih Kelas --</option>';
+        classes.forEach(kelas=>{
+          const option=document.createElement("option");
+          option.value=kelas; option.textContent=kelas;
+          select.appendChild(option);
+        });
+        if(!classes.length){
+          select.innerHTML='<option value="">Belum ada data kelas</option>';
+        }
+      }catch(err){
+        select.innerHTML='<option value="">Gagal memuat kelas</option>';
+        setMessage("loginMessage",err.message||"Gagal mengambil daftar kelas dari server.");
+      }finally{
+        select.disabled=false;
+      }
+    }
+
+    async function loadStudentsByClass(kelas){
+      const select=$("username");
+      select.disabled=true;
+      select.innerHTML='<option value="">Memuat daftar siswa...</option>';
+      if(!kelas){
+        select.innerHTML='<option value="">Pilih kelas terlebih dahulu</option>';
+        return;
+      }
+      try{
+        const data=await api("getStudents",{kelas});
+        if(!data.success) throw new Error(data.message||"Gagal memuat daftar siswa.");
+        const students=Array.isArray(data.students)?data.students:[];
+        select.innerHTML='<option value="">-- Pilih Nama Siswa --</option>';
+        students.forEach(student=>{
+          const option=document.createElement("option");
+          option.value=student.username;
+          option.textContent=student.nama || student.username;
+          option.dataset.nama=student.nama||"";
+          select.appendChild(option);
+        });
+        if(!students.length){
+          select.innerHTML='<option value="">Tidak ada siswa pada kelas ini</option>';
+        }
+      }catch(err){
+        select.innerHTML='<option value="">Gagal memuat siswa</option>';
+        setMessage("loginMessage",err.message||"Gagal mengambil daftar siswa.");
+      }finally{
+        select.disabled=false;
+      }
+    }
+
+    async function showScheduleDialog(){
+      const dialog=$("scheduleDialog");
+      const status=$("scheduleStatus");
+      const rows=$("scheduleRows");
+      rows.replaceChildren();
+      status.className="schedule-message";
+      status.textContent="Memuat jadwal...";
+      if(!dialog.open)dialog.showModal();
+      try{
+        const data=await api("getSchedules");
+        if(!data.success)throw new Error(data.message||"Jadwal gagal dimuat.");
+        const schedules=Array.isArray(data.schedules)?data.schedules:[];
+        if(!schedules.length){status.textContent="Belum ada jadwal aktif pada spreadsheet.";return;}
+        status.textContent="Menampilkan "+schedules.length+" jadwal aktif.";
+        schedules.forEach(schedule=>{
+          const tr=document.createElement("tr");
+          [schedule.tanggal,schedule.kelas,schedule.mapel,schedule.mulai,schedule.selesai].forEach((value,index)=>{
+            const td=document.createElement("td");
+            td.textContent=index>=3?formatTimeValue(value):formatValue(value);
+            if(index>=3)td.className="schedule-time";
+            tr.appendChild(td);
+          });
+          rows.appendChild(tr);
+        });
+      }catch(err){
+        status.className="schedule-message error";
+        status.textContent=err.message||"Gagal memuat jadwal. Periksa koneksi dan deployment Apps Script.";
+      }
+    }
+
+    function saveState(){
+      localStorage.setItem("cbt_session_id",state.sessionId);
+      localStorage.setItem("cbt_state",JSON.stringify({user:state.user,jadwal:state.jadwal,googleFormUrl:state.googleFormUrl,examActive:state.examActive}));
+    }
+    function resetState(){
+      state.sessionId="";state.user=null;state.jadwal=null;state.googleFormUrl="";state.examActive=false;stopExamTimer();
+      localStorage.removeItem("cbt_session_id");localStorage.removeItem("cbt_state");
+    }
+    function restoreState(){
+      const sid=localStorage.getItem("cbt_session_id"); if(!sid)return;
+      state.sessionId=sid;
+      try{const x=JSON.parse(localStorage.getItem("cbt_state")||"{}");state.user=x.user||null;state.jadwal=x.jadwal||null;state.googleFormUrl=x.googleFormUrl||"";state.examActive=x.examActive===true;}catch(e){}
+      checkExistingSession();
+    }
+
+    async function checkExistingSession(){
+      try{
+        const data=await api("checkSession",{sessionId:state.sessionId});
+        if(data&&data.valid){
+          if(data.status==="submit_form"){state.examActive=false;saveState();showQuestionnaire();}
+          else if(state.user&&state.jadwal){state.examActive=data.status==="mengerjakan";saveState();showRunningScreen();}
+          else resetState();
+        }else resetState();
+      }catch(e){/* tetap di login */}
+    }
+
+    function showExamScreen(){
+      $("examName").textContent=formatValue(state.user?.nama);
+      $("examClass").textContent="Kelas "+formatValue(state.user?.kelas);
+      $("examMapel").textContent=formatValue(state.jadwal?.mapel);
+      $("sumKelas").textContent=formatValue(state.jadwal?.kelas);
+      $("sumMapel").textContent=formatValue(state.jadwal?.mapel);
+      $("sumMulai").textContent=formatTimeValue(state.jadwal?.mulai);
+      $("sumSelesai").textContent=formatTimeValue(state.jadwal?.selesai);
+      showScreen("examScreen");
+    }
+    function showRunningScreen(){
+      $("runningMapel").textContent=formatValue(state.jadwal?.mapel);
+      $("runningName").textContent=formatValue(state.user?.nama);
+      $("runningClass").textContent=formatValue(state.user?.kelas);
+      $("runningStart").textContent=formatTimeValue(state.jadwal?.mulai);
+      $("runningEnd").textContent=formatTimeValue(state.jadwal?.selesai);
+      showScreen("runningScreen");
+      if(state.examActive)startExamTimer();
+    }
+    function getJakartaParts(date){
+      const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(date);
+      return Object.fromEntries(parts.filter(p=>p.type!=="literal").map(p=>[p.type,p.value]));
+    }
+    function getExamDeadline(){
+      const dateValue=String(state.jadwal?.tanggal||"");
+      let dateParts;
+      const dateOnly=dateValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if(dateOnly)dateParts={year:dateOnly[1],month:dateOnly[2],day:dateOnly[3]};
+      else if(dateValue){const parsedDate=new Date(dateValue);if(!Number.isNaN(parsedDate.getTime()))dateParts=getJakartaParts(parsedDate);}
+      const timeValue=state.jadwal?.selesai;
+      let hour,minute;
+      const directTime=String(timeValue||"").match(/^(\d{1,2}):(\d{2})/);
+      if(directTime){hour=Number(directTime[1]);minute=Number(directTime[2]);}
+      else if(timeValue){const parsedTime=new Date(timeValue);if(!Number.isNaN(parsedTime.getTime())){const timeParts=getJakartaParts(parsedTime);hour=Number(timeParts.hour);minute=Number(timeParts.minute);}}
+      if(!dateParts||hour===undefined||minute===undefined||hour>23||minute>59)return null;
+      return Date.UTC(Number(dateParts.year),Number(dateParts.month)-1,Number(dateParts.day),hour,minute)-7*60*60*1000;
+    }
+    function updateExamTimer(){
+      const deadline=getExamDeadline();
+      if(deadline===null){$("examTimer").textContent="--:--:--";return;}
+      const remaining=Math.max(0,Math.floor((deadline-Date.now())/1000));
+      const hours=String(Math.floor(remaining/3600)).padStart(2,"0");
+      const minutes=String(Math.floor((remaining%3600)/60)).padStart(2,"0");
+      const seconds=String(remaining%60).padStart(2,"0");
+      $("examTimer").textContent=hours+":"+minutes+":"+seconds;
+    }
+    function startExamTimer(){
+      stopExamTimer();updateExamTimer();
+      state.examTimerId=setInterval(updateExamTimer,1000);
+    }
+    function stopExamTimer(){
+      if(state.examTimerId){clearInterval(state.examTimerId);state.examTimerId=null;}
+      const timer=$("examTimer");if(timer)timer.textContent="--:--:--";
+    }
+    function showQuestionnaire(){
+      $("questionMessage").textContent="Berikan penilaian setelah menyelesaikan CBT.";
+      $("questionMessage").className="notice";
+      showScreen("questionnaireScreen");
+    }
+    function makeEmbeddedFormUrl(url){
+      try{
+        const formUrl=new URL(url);
+        formUrl.searchParams.set("embedded","true");
+        return formUrl.toString();
+      }catch(e){return url;}
+    }
+    function openGoogleForm(){
+      const url=state.googleFormUrl||CONFIG.DEFAULT_GOOGLE_FORM_URL;
+      if(!url){alert("Link Google Form belum tersedia.");return;}
+      $("embeddedFormTitle").textContent="Ujian CBT • "+formatValue(state.jadwal?.mapel);
+      $("embeddedStudentName").textContent=formatValue(state.user?.nama)+" • Kelas "+formatValue(state.user?.kelas);
+      $("googleFormFrame").src=makeEmbeddedFormUrl(url);
+      $("googleFormOverlay").classList.add("active");
+      $("googleFormOverlay").setAttribute("aria-hidden","false");
+    }
+    function closeGoogleForm(){
+      $("googleFormOverlay").classList.remove("active");
+      $("googleFormOverlay").setAttribute("aria-hidden","true");
+    }
+    function getSavedViolation(){
+      try{return JSON.parse(localStorage.getItem(CONFIG.VIOLATION_STORAGE_KEY)||"null");}catch(e){return null;}
+    }
+    function showViolationLock(record){
+      const count=Math.max(1,Number(record?.count)||1);
+      $("violationCount").textContent="Pelanggaran "+count;
+      $("adminPinError").textContent="";
+      $("violationOverlay").classList.add("active");
+      $("adminPinInput").value="";
+      startWarningSound();
+    }
+    function recordExamViolation(reason){
+      if(!state.examActive)return;
+      const existing=getSavedViolation();
+      const record={locked:true,count:(Number(existing?.count)||0)+1,reason:reason||"Meninggalkan halaman ujian",time:new Date().toISOString()};
+      try{localStorage.setItem(CONFIG.VIOLATION_STORAGE_KEY,JSON.stringify(record));}catch(e){}
+      showViolationLock(record);
+    }
+    function restoreViolationLock(){
+      const record=getSavedViolation();
+      if(record&&record.locked)showViolationLock(record);
+    }
+    $("adminPinForm").addEventListener("submit",e=>{
+      e.preventDefault();
+      const pin=$("adminPinInput").value.trim();
+      if(pin!==CONFIG.ADMIN_PIN){$("adminPinError").textContent="PIN Admin salah. Peringatan tetap terkunci.";$("adminPinInput").select();return;}
+      localStorage.removeItem(CONFIG.VIOLATION_STORAGE_KEY);
+      $("violationOverlay").classList.remove("active");
+      stopWarningSound();
+      $("adminPinError").textContent="";
+      if(state.examActive)updateExamTimer();
+    });
+    async function recordFormSubmission(button){
+      setButtonLoading(button,true,"Mencatat...");
+      try{
+        const data=await api("submitForm",{sessionId:state.sessionId,ip:"",device:getDevice()});
+        if(!data.success){alert(data.message||"Pengerjaan belum dapat dicatat.");return;}
+        state.examActive=false;saveState();stopExamTimer();
+        closeGoogleForm();
+        showQuestionnaire();
+      }catch(err){alert(err.message||"Gagal mencatat pengerjaan.");}
+      finally{setButtonLoading(button,false,button.id==="embeddedSubmitButton"?"Sudah kirim":"Sudah Kirim Jawaban");}
+    }
+
+    $("togglePassword").addEventListener("click",()=>{const i=$("password");i.type=i.type==="password"?"text":"password";});
+    $("showPassword").addEventListener("change",e=>{$("password").type=e.target.checked?"text":"password";});
+
+    $("kelas").addEventListener("change",async e=>{
+      hideMessage("loginMessage");
+      $("password").value="";
+      $("token").value="";
+      await loadStudentsByClass(e.target.value);
+    });
+
+    $("loginForm").addEventListener("submit",async e=>{
+      e.preventDefault();hideMessage("loginMessage");
+      const kelas=$("kelas").value.trim(),username=$("username").value.trim(),password=$("password").value,token=$("token").value.trim();
+      if(!kelas||!username||!password||!token){setMessage("loginMessage","Kelas, username, password, dan token wajib diisi.");return;}
+      const button=$("loginButton");setButtonLoading(button,true,"Memverifikasi...");
+      try{
+        const data=await api("login",{username,password,token,kelas,ip:"",device:getDevice()});
+        if(!data.success){setMessage("loginMessage",data.message||"Login gagal.");return;}
+        if(data.user?.kelas&&data.user.kelas!==kelas){setMessage("loginMessage","Kelas yang dipilih tidak sesuai dengan akun siswa.");return;}
+        state.sessionId=data.sessionId;state.user=data.user;state.jadwal=data.jadwal;saveState();showExamScreen();
+      }catch(err){setMessage("loginMessage",err.message||"Gagal menghubungi server.");}
+      finally{setButtonLoading(button,false,"Masuk");}
+    });
+
+    $("startExamButton").addEventListener("click",async()=>{
+      const button=$("startExamButton");setButtonLoading(button,true,"Menyiapkan ujian...");
+      try{
+        const data=await api("startExam",{sessionId:state.sessionId,ip:"",device:getDevice()});
+        if(!data.success){alert(data.message||"Ujian belum dapat dimulai.");return;}
+        state.googleFormUrl=data.googleFormUrl||state.googleFormUrl||CONFIG.DEFAULT_GOOGLE_FORM_URL;
+        state.examActive=true;
+        saveState();showRunningScreen();openGoogleForm();
+      }catch(err){alert(err.message||"Gagal memulai ujian.");}
+      finally{setButtonLoading(button,false,"Mulai Ujian");}
+    });
+
+    $("openFormButton").addEventListener("click",openGoogleForm);
+    $("closeEmbeddedFormButton").addEventListener("click",closeGoogleForm);
+    $("submitFormButton").addEventListener("click",e=>recordFormSubmission(e.currentTarget));
+    $("embeddedSubmitButton").addEventListener("click",e=>recordFormSubmission(e.currentTarget));
+    document.querySelectorAll("[data-open-about]").forEach(button=>button.addEventListener("click",()=>$("aboutDialog").showModal()));
+    $("closeAboutButton").addEventListener("click",()=>$("aboutDialog").close());
+
+    $("questionnaireForm").addEventListener("submit",async e=>{
+      e.preventDefault();
+      const ratingAplikasi=document.querySelector('input[name="ratingAplikasi"]:checked')?.value||"";
+      const ratingSoal=document.querySelector('input[name="ratingSoal"]:checked')?.value||"";
+      const saran=$("saran").value.trim();
+      if(!ratingAplikasi||!ratingSoal){setMessage("questionMessage","Kedua rating wajib diisi.");return;}
+      const button=$("questionnaireButton");setButtonLoading(button,true,"Menyimpan...");
+      try{
+        const data=await api("questionnaire",{sessionId:state.sessionId,ratingAplikasi,ratingSoal,saran});
+        if(!data.success){setMessage("questionMessage",data.message||"Kuesioner gagal disimpan.");return;}
+        $("finishName").textContent=formatValue(state.user?.nama);$("finishClass").textContent=formatValue(state.user?.kelas);$("finishMapel").textContent=formatValue(state.jadwal?.mapel);showScreen("finishScreen");
+      }catch(err){setMessage("questionMessage",err.message||"Gagal menyimpan kuesioner.");}
+      finally{setButtonLoading(button,false,"Kirim Kuesioner");}
+    });
+
+    async function logoutSession(){
+      try{if(state.sessionId)await api("logout",{sessionId:state.sessionId,ip:"",device:getDevice()});}
+      catch(e){}
+      finally{resetState();location.reload();}
+    }
+    $("logoutBeforeExam").addEventListener("click",logoutSession);
+    $("logoutRunningButton").addEventListener("click",logoutSession);
+    $("backLoginButton").addEventListener("click",logoutSession);
+    $("resetButton").addEventListener("click",()=>{if(confirm("Reset sesi dan kembali ke halaman login?")){resetState();location.reload();}});
+    $("finishButton").addEventListener("click",()=>{resetState();location.reload();});
+    $("scheduleButton").addEventListener("click",showScheduleDialog);
+    $("closeScheduleButton").addEventListener("click",()=>$("scheduleDialog").close());
+    $("scheduleDialog").addEventListener("click",e=>{if(e.target===e.currentTarget)e.currentTarget.close();});
+
+    document.addEventListener("contextmenu",e=>{
+      if(!state.examActive)return;
+      e.preventDefault();
+      recordExamViolation("Klik kanan saat ujian berlangsung");
+    });
+
+    document.addEventListener("visibilitychange",()=>{
+      if(document.hidden&&state.examActive)recordExamViolation("Membuka tab/jendela lain atau meninggalkan halaman ujian");
+      else{
+        if($("violationOverlay").classList.contains("active"))startWarningSound();
+        if(state.examActive)updateExamTimer();
+      }
+    });
+    window.addEventListener("storage",e=>{
+      if(e.key!==CONFIG.VIOLATION_STORAGE_KEY)return;
+      if(e.newValue){try{const record=JSON.parse(e.newValue);if(record&&record.locked){playWarningSound();showViolationLock(record);}}catch(err){}}
+      else{$("violationOverlay").classList.remove("active");stopWarningSound();}
+    });
+
+    loadClasses();
+    restoreViolationLock();
+    restoreState();
+  </script>
+</body>
+</html>
