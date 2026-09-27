@@ -1082,14 +1082,50 @@
       else{button.disabled=false;button.textContent=button.dataset.originalText||text||"Simpan";}
     }
     function formatValue(v){return v===null||v===undefined||v===""?"-":String(v);}
-    function formatTimeValue(value){
-      if(value===null||value===undefined||value==="")return "-";
+    function parseTimeParts(value){
+      if(value===null||value===undefined||value==="")return null;
+      if(typeof value==="number"){
+        // Google Sheets dapat mengirim jam sebagai pecahan 1 hari.
+        const fraction=((value%1)+1)%1;
+        const total=Math.round(fraction*24*60);
+        return {hour:Math.floor(total/60)%24,minute:total%60};
+      }
       const text=String(value).trim();
-      const direct=text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?/);
-      if(direct)return String(direct[1]).padStart(2,"0")+":"+direct[2];
+      const direct=text.match(/(?:^|T|\s)(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+      if(direct){
+        const hour=Number(direct[1]),minute=Number(direct[2]);
+        if(hour<=23&&minute<=59)return {hour,minute};
+      }
       const date=new Date(text);
-      if(Number.isNaN(date.getTime()))return text;
-      return new Intl.DateTimeFormat("id-ID",{timeZone:"Asia/Jakarta",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(date);
+      if(Number.isNaN(date.getTime()))return null;
+      const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Jakarta",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(date);
+      const obj=Object.fromEntries(parts.filter(p=>p.type!=="literal").map(p=>[p.type,p.value]));
+      const hour=Number(obj.hour),minute=Number(obj.minute);
+      return hour<=23&&minute<=59?{hour,minute}:null;
+    }
+    function parseDateParts(value){
+      if(value===null||value===undefined||value==="")return null;
+      const text=String(value).trim();
+      let match=text.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+      if(match){
+        const year=Number(match[1]),month=Number(match[2]),day=Number(match[3]);
+        return year>=2000&&month>=1&&month<=12&&day>=1&&day<=31?{year,month,day}:null;
+      }
+      match=text.match(/^(\d{1,2})[\/]([0-9]{1,2})[\/]((?:20)\d{2})/);
+      if(match){
+        const day=Number(match[1]),month=Number(match[2]),year=Number(match[3]);
+        return month<=12&&day<=31?{year,month,day}:null;
+      }
+      const date=new Date(text);
+      if(Number.isNaN(date.getTime()))return null;
+      const parts=getJakartaParts(date);
+      const year=Number(parts.year),month=Number(parts.month),day=Number(parts.day);
+      // Tahun 1899/1900 adalah tanggal dasar dari nilai waktu Sheets, bukan tanggal ujian.
+      return year>=2000?{year,month,day}:null;
+    }
+    function formatTimeValue(value){
+      const parts=parseTimeParts(value);
+      return parts?String(parts.hour).padStart(2,"0")+":"+String(parts.minute).padStart(2,"0"):"-";
     }
     function getDevice(){return [navigator.userAgent,navigator.platform||"",window.innerWidth+"x"+window.innerHeight].join(" | ");}
 
@@ -1326,18 +1362,11 @@
       return Object.fromEntries(parts.filter(p=>p.type!=="literal").map(p=>[p.type,p.value]));
     }
     function getExamDeadline(){
-      const dateValue=String(state.jadwal?.tanggal||"");
-      let dateParts;
-      const dateOnly=dateValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if(dateOnly)dateParts={year:dateOnly[1],month:dateOnly[2],day:dateOnly[3]};
-      else if(dateValue){const parsedDate=new Date(dateValue);if(!Number.isNaN(parsedDate.getTime()))dateParts=getJakartaParts(parsedDate);}
-      const timeValue=state.jadwal?.selesai;
-      let hour,minute;
-      const directTime=String(timeValue||"").match(/^(\d{1,2}):(\d{2})/);
-      if(directTime){hour=Number(directTime[1]);minute=Number(directTime[2]);}
-      else if(timeValue){const parsedTime=new Date(timeValue);if(!Number.isNaN(parsedTime.getTime())){const timeParts=getJakartaParts(parsedTime);hour=Number(timeParts.hour);minute=Number(timeParts.minute);}}
-      if(!dateParts||hour===undefined||minute===undefined||hour>23||minute>59)return null;
-      return Date.UTC(Number(dateParts.year),Number(dateParts.month)-1,Number(dateParts.day),hour,minute)-7*60*60*1000;
+      const dateParts=parseDateParts(state.jadwal?.tanggal);
+      const timeParts=parseTimeParts(state.jadwal?.selesai);
+      if(!dateParts||!timeParts)return null;
+      // Jadwal dibuat dalam WIB; ubah WIB ke epoch UTC secara eksplisit.
+      return Date.UTC(dateParts.year,dateParts.month-1,dateParts.day,timeParts.hour,timeParts.minute)-7*60*60*1000;
     }
     function updateExamTimer(){
       const deadline=getExamDeadline();
@@ -1442,10 +1471,21 @@
       const button=$("loginButton");setButtonLoading(button,true,"Memverifikasi...");
       try{
         const data=await api("login",{username,password,token,kelas,ip:"",device:getDevice()});
-        if(!data.success){setMessage("loginMessage",data.message||"Login gagal.");return;}
+        if(!data.success){
+          const serverMessage=data.message||"Login gagal.";
+          const scheduleError=/1899|1900|31 Dec 1899|Sun Dec 31 1899/i.test(serverMessage)
+            ? "Jadwal server salah membaca kolom waktu (terbaca tahun 1899). Perbaiki format kolom Tanggal, Mulai, dan Selesai di Google Sheet lalu coba login lagi."
+            : serverMessage;
+          setMessage("loginMessage",scheduleError);return;
+        }
         if(data.user?.kelas&&data.user.kelas!==kelas){setMessage("loginMessage","Kelas yang dipilih tidak sesuai dengan akun siswa.");return;}
         state.sessionId=data.sessionId;state.user=data.user;state.jadwal=data.jadwal;saveState();showExamScreen();
-      }catch(err){setMessage("loginMessage",err.message||"Gagal menghubungi server.");}
+      }catch(err){
+        const message=err.message||"Gagal menghubungi server.";
+        setMessage("loginMessage",/1899|1900|31 Dec 1899|Sun Dec 31 1899/i.test(message)
+          ? "Format tanggal/jam jadwal di server belum benar. Kolom Tanggal harus berisi tanggal ujian, sedangkan Mulai dan Selesai harus berisi jam saja (contoh 07:30 dan 09:30)."
+          : message);
+      }
       finally{setButtonLoading(button,false,"Masuk");}
     });
 
