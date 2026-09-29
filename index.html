@@ -1053,13 +1053,19 @@
       DEFAULT_GOOGLE_FORM_URL: "https://docs.google.com/forms/d/e/1FAIpQLSdwBS3rLkjRjn8fuw-eArPhGHwVI6BuqWM8MuICHZ4kjlacLg/viewform?usp=header",
       ADMIN_PIN: "1212",
       VIOLATION_STORAGE_KEY: "cbt_exam_violation_v1",
-      VIOLATION_DURATION_MS: 5 * 60 * 1000
+      VIOLATION_DURATION_MS: 5 * 60 * 1000,
+      // Deteksi submit Google Form melalui pemuatan iframe kedua.
+      // Agar akurat, Google Form harus dibuat satu bagian/halaman (tanpa section tambahan).
+      GOOGLE_FORM_SINGLE_PAGE: true
     };
 
     const state = { sessionId:"", user:null, jadwal:null, googleFormUrl:"", examActive:false, examTimerId:null };
     let warningAudioUnlocked=false;
     let warningSoundPending=false;
     let violationCountdownId=null;
+    // Pemuatan iframe pertama = form; pemuatan kedua pada form satu halaman = halaman konfirmasi submit.
+    let googleFormFrameLoadCount=0;
+    let googleFormSubmittedForScore=false;
     const $ = id => document.getElementById(id);
 
     function unlockWarningAudio(){
@@ -1507,9 +1513,12 @@
       // tab dapat diawasi. Google Form mendukung parameter embedded=true.
       $("embeddedFormTitle").textContent="Ujian CBT • "+formatValue(state.jadwal?.mapel);
       $("embeddedStudentName").textContent=formatValue(state.user?.nama)+" • Kelas "+formatValue(state.user?.kelas);
-      $("googleFormFrame").src=makeEmbeddedFormUrl(url);
+      // Setel ulang status setiap kali form dibuka.
+      googleFormFrameLoadCount=0;
+      googleFormSubmittedForScore=false;
       $("googleFormOverlay").classList.add("active");
       $("googleFormOverlay").setAttribute("aria-hidden","false");
+      $("googleFormFrame").src=makeEmbeddedFormUrl(url);
       const savedViolation=getSavedViolation();
       if(savedViolation?.locked)showViolationLock(savedViolation);
     }
@@ -1523,6 +1532,15 @@
     function isExamSheetOpen(){
       return state.examActive && $("googleFormOverlay").classList.contains("active");
     }
+    // Google Forms tidak menyediakan callback submit yang dapat dibaca parent lintas-domain.
+    // Untuk form satu halaman, load kedua menandai bahwa halaman konfirmasi sudah tampil.
+    $("googleFormFrame").addEventListener("load",()=>{
+      if(!isExamSheetOpen())return;
+      googleFormFrameLoadCount++;
+      if(CONFIG.GOOGLE_FORM_SINGLE_PAGE && googleFormFrameLoadCount>=2){
+        googleFormSubmittedForScore=true;
+      }
+    });
     function stopViolationCountdown(){
       if(violationCountdownId){clearInterval(violationCountdownId);violationCountdownId=null;}
     }
@@ -1753,17 +1771,24 @@
     },true);
 
     document.addEventListener("visibilitychange",()=>{
-      if(document.hidden&&isExamSheetOpen())recordExamViolation("Beralih tab atau meninggalkan Lembar Soal");
-      else{
-        if($("violationOverlay").classList.contains("active"))startWarningSound();
-        if(state.examActive)updateExamTimer();
+      if(document.hidden){
+        // Setelah halaman konfirmasi submit tampil, tombol Google Form seperti “Lihat skor”
+        // boleh membuka tab baru tanpa memicu alarm.
+        if(isExamSheetOpen()&&!googleFormSubmittedForScore){
+          recordExamViolation("Beralih tab atau meninggalkan Lembar Soal");
+        }
+        return;
       }
+      if($("violationOverlay").classList.contains("active"))startWarningSound();
+      if(state.examActive)updateExamTimer();
     });
     // Fallback untuk browser yang tidak mengirim visibilitychange saat fokus berpindah.
-    // Tunggu sejenak agar fokus ke kontrol di iframe Google Form tidak salah dianggap tab baru.
+    // Penanda submit mencegah tombol “Lihat skor” di halaman konfirmasi memicu alarm.
     window.addEventListener("blur",()=>{
       window.setTimeout(()=>{
-        if(isExamSheetOpen()&&!document.hasFocus())recordExamViolation("Fokus berpindah dari Lembar Soal");
+        if(isExamSheetOpen()&&!googleFormSubmittedForScore&&!document.hasFocus()){
+          recordExamViolation("Fokus berpindah dari Lembar Soal");
+        }
       },120);
     });
     window.addEventListener("focus",()=>{
