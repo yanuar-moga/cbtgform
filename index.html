@@ -855,7 +855,7 @@
 
           <div class="form-actions">
             <button class="btn btn-primary" id="startExamButton">Mulai Ujian</button>
-            <button class="btn btn-secondary" id="backLoginButton">Log Out</button>
+            <button class="btn btn-secondary" id="backLoginButton">Kembali ke Login</button>
           </div>
 
           <div class="footer"><strong>CBT Integrated GForm</strong></div>
@@ -952,7 +952,7 @@
             </div>
           </div>
 
-          <button class="btn btn-primary" id="finishButton">Log Out</button>
+          <button class="btn btn-primary" id="finishButton">Kembali ke Login</button>
 
           <div class="footer"><strong>CBT Integrated GForm</strong><br>Silakan mengikuti instruksi berikutnya.</div>
         </section>
@@ -1056,7 +1056,8 @@
       VIOLATION_DURATION_MS: 5 * 60 * 1000
     };
 
-    const state = { sessionId:"", user:null, jadwal:null, googleFormUrl:"", examActive:false, examTimerId:null };
+    const state = { sessionId:"", user:null, jadwal:null, googleFormUrl:"", examActive:false, googleFormSubmitted:false, examTimerId:null };
+    let googleFormLoadCount=0;
     let warningAudioUnlocked=false;
     let warningSoundPending=false;
     let violationCountdownId=null;
@@ -1360,10 +1361,10 @@
 
     function saveState(){
       localStorage.setItem("cbt_session_id",state.sessionId);
-      localStorage.setItem("cbt_state",JSON.stringify({user:state.user,jadwal:state.jadwal,googleFormUrl:state.googleFormUrl,examActive:state.examActive}));
+      localStorage.setItem("cbt_state",JSON.stringify({user:state.user,jadwal:state.jadwal,googleFormUrl:state.googleFormUrl,examActive:state.examActive,googleFormSubmitted:state.googleFormSubmitted}));
     }
     function resetState(){
-      state.sessionId="";state.user=null;state.jadwal=null;state.googleFormUrl="";state.examActive=false;stopExamTimer();
+      state.sessionId="";state.user=null;state.jadwal=null;state.googleFormUrl="";state.examActive=false;state.googleFormSubmitted=false;stopExamTimer();
       stopViolationCountdown();
       try{localStorage.removeItem(CONFIG.VIOLATION_STORAGE_KEY);}catch(e){}
       $("violationOverlay").classList.remove("active");stopWarningSound();
@@ -1378,6 +1379,7 @@
         state.jadwal=x.jadwal?normalizeJadwal(x.jadwal):null;
         state.googleFormUrl=x.googleFormUrl||"";
         state.examActive=x.examActive===true;
+        state.googleFormSubmitted=x.googleFormSubmitted===true;
       }catch(e){}
       // Pulihkan tampilan dari penyimpanan lokal seketika; jangan biarkan layar login
       // menjadi tampilan sementara selama checkSession masih menunggu jaringan.
@@ -1507,6 +1509,7 @@
       // tab dapat diawasi. Google Form mendukung parameter embedded=true.
       $("embeddedFormTitle").textContent="Ujian CBT • "+formatValue(state.jadwal?.mapel);
       $("embeddedStudentName").textContent=formatValue(state.user?.nama)+" • Kelas "+formatValue(state.user?.kelas);
+      googleFormLoadCount=0;
       $("googleFormFrame").src=makeEmbeddedFormUrl(url);
       $("googleFormOverlay").classList.add("active");
       $("googleFormOverlay").setAttribute("aria-hidden","false");
@@ -1522,6 +1525,10 @@
     }
     function isExamSheetOpen(){
       return state.examActive && $("googleFormOverlay").classList.contains("active");
+    }
+    function isExamTabMonitoringActive(){
+      // Setelah form terkirim, Google dapat membuka tab skor; jangan bunyikan alarm.
+      return isExamSheetOpen() && !state.googleFormSubmitted;
     }
     function stopViolationCountdown(){
       if(violationCountdownId){clearInterval(violationCountdownId);violationCountdownId=null;}
@@ -1565,7 +1572,7 @@
       startWarningSound();
     }
     function recordExamViolation(reason){
-      if(!isExamSheetOpen())return;
+      if(!isExamTabMonitoringActive())return;
       const existing=getSavedViolation();
       // Jangan memperpanjang atau menggandakan lock untuk satu perpindahan tab.
       if(existing?.locked&&Number(existing.expiresAt)>Date.now()){
@@ -1655,6 +1662,7 @@
         if(!data.success){alert(data.message||"Ujian belum dapat dimulai.");return;}
         state.googleFormUrl=data.googleFormUrl||state.googleFormUrl||CONFIG.DEFAULT_GOOGLE_FORM_URL;
         state.examActive=true;
+        state.googleFormSubmitted=false;
         saveState();showRunningScreen();openGoogleForm();
       }catch(err){alert(err.message||"Gagal memulai ujian.");}
       finally{setButtonLoading(button,false,"Mulai Ujian");}
@@ -1737,7 +1745,7 @@
       if(!$("violationOverlay").classList.contains("active"))recordExamViolation("Klik kanan saat Lembar Soal terbuka");
     });
     document.addEventListener("keydown",e=>{
-      if(!isExamSheetOpen())return;
+      if(!isExamTabMonitoringActive())return;
       const key=String(e.key||"").toLowerCase();
       // Jika browser meneruskan shortcut ke halaman, blokir dan kunci dengan peringatan.
       if((e.ctrlKey||e.metaKey)&&["t","n"].includes(key)){
@@ -1752,8 +1760,18 @@
       if(isExamSheetOpen()&&e.button===1)e.preventDefault();
     },true);
 
+    $("googleFormFrame").addEventListener("load",()=>{
+      if(!isExamSheetOpen())return;
+      googleFormLoadCount++;
+      // Navigasi iframe setelah dokumen ujian pertama kali dimuat biasanya menandakan
+      // Google Form telah dikirim dan menampilkan konfirmasi/tautan skor.
+      if(googleFormLoadCount>=2&&!state.googleFormSubmitted){
+        state.googleFormSubmitted=true;
+        saveState();
+      }
+    });
     document.addEventListener("visibilitychange",()=>{
-      if(document.hidden&&isExamSheetOpen())recordExamViolation("Beralih tab atau meninggalkan Lembar Soal");
+      if(document.hidden&&isExamTabMonitoringActive())recordExamViolation("Beralih tab atau meninggalkan Lembar Soal");
       else{
         if($("violationOverlay").classList.contains("active"))startWarningSound();
         if(state.examActive)updateExamTimer();
@@ -1763,7 +1781,7 @@
     // Tunggu sejenak agar fokus ke kontrol di iframe Google Form tidak salah dianggap tab baru.
     window.addEventListener("blur",()=>{
       window.setTimeout(()=>{
-        if(isExamSheetOpen()&&!document.hasFocus())recordExamViolation("Fokus berpindah dari Lembar Soal");
+        if(isExamTabMonitoringActive()&&!document.hasFocus())recordExamViolation("Fokus berpindah dari Lembar Soal");
       },120);
     });
     window.addEventListener("focus",()=>{
