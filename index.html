@@ -867,6 +867,7 @@
           <h2 id="runningMapel">Ujian</h2>
           <div class="title-line"></div>
 
+          <div class="notice" id="sessionRestoreNotice" style="display:none;margin-bottom:16px" role="status"></div>
           <div class="notice success">
             Selesaikan dan kirim seluruh jawaban pada Google Form yang dibuka di halaman CBT ini. Setelah terkirim, tekan <b>Sudah Kirim Jawaban</b>.
           </div>
@@ -1371,19 +1372,61 @@
     function restoreState(){
       const sid=localStorage.getItem("cbt_session_id"); if(!sid)return;
       state.sessionId=sid;
-      try{const x=JSON.parse(localStorage.getItem("cbt_state")||"{}");state.user=x.user||null;state.jadwal=x.jadwal?normalizeJadwal(x.jadwal):null;state.googleFormUrl=x.googleFormUrl||"";state.examActive=x.examActive===true;}catch(e){}
+      try{
+        const x=JSON.parse(localStorage.getItem("cbt_state")||"{}");
+        state.user=x.user||null;
+        state.jadwal=x.jadwal?normalizeJadwal(x.jadwal):null;
+        state.googleFormUrl=x.googleFormUrl||"";
+        state.examActive=x.examActive===true;
+      }catch(e){}
+      // Pulihkan tampilan dari penyimpanan lokal seketika; jangan biarkan layar login
+      // menjadi tampilan sementara selama checkSession masih menunggu jaringan.
+      if(state.user&&state.jadwal){
+        if(state.examActive){showRunningScreen();openGoogleForm();}
+        else showExamScreen();
+      }
       checkExistingSession();
     }
 
+    function showSessionRestoreNotice(message){
+      const notice=$("sessionRestoreNotice");
+      if(!notice)return;
+      notice.textContent=message;
+      notice.className="notice";
+      notice.style.display="block";
+    }
     async function checkExistingSession(){
+      const hasLocalSession=Boolean(state.user&&state.jadwal);
       try{
         const data=await api("checkSession",{sessionId:state.sessionId});
         if(data&&data.valid){
-          if(data.status==="submit_form"){state.examActive=false;saveState();showQuestionnaire();}
-          else if(state.user&&state.jadwal){state.examActive=data.status==="mengerjakan";saveState();showRunningScreen();}
-          else resetState();
+          if(data.status==="submit_form"){
+            state.examActive=false;saveState();closeGoogleForm();showQuestionnaire();
+          }else if(state.user&&state.jadwal){
+            // Hanya status server "mengerjakan" yang mengaktifkan ulang flag ujian.
+            // Status/response lain tidak menghapus pemulihan lokal secara otomatis.
+            if(data.status==="mengerjakan")state.examActive=true;
+            saveState();
+            if(state.examActive){
+              showRunningScreen();
+              if(!$("googleFormOverlay").classList.contains("active"))openGoogleForm();
+            }else showExamScreen();
+            $("sessionRestoreNotice").style.display="none";
+          }else{
+            showSessionRestoreNotice("Server mengonfirmasi sesi, tetapi data peserta lokal tidak lengkap. Muat ulang setelah koneksi pulih atau hubungi pengawas.");
+          }
+        }else if(hasLocalSession){
+          // Pertahankan ujian yang sedang berjalan untuk menghindari logout akibat
+          // respons checkSession yang kosong/tidak sinkron; proses ujian dapat melapor
+          // kembali ke server saat jaringan tersedia.
+          showSessionRestoreNotice("Lembar Soal dipulihkan dari perangkat ini. Status server belum terkonfirmasi; periksa koneksi dan beri tahu pengawas jika terjadi kendala.");
         }else resetState();
-      }catch(e){/* tetap di login */}
+      }catch(e){
+        if(hasLocalSession){
+          showSessionRestoreNotice("Lembar Soal dipulihkan dari perangkat ini, tetapi server belum dapat dihubungi. Periksa koneksi internet.");
+        }
+        // Jika sesi lokal ada, tetap tampilkan layar yang dipulihkan; jangan kembali ke login.
+      }
     }
 
     function showExamScreen(){
@@ -1644,10 +1687,44 @@
       catch(e){}
       finally{resetState();location.reload();}
     }
+    async function clearApplicationCaches(){
+      // Browser tidak mengizinkan situs menghapus HTTP cache global; hapus cache aplikasi pada origin ini.
+      try{
+        if("caches" in window){
+          const names=await caches.keys();
+          await Promise.allSettled(names.map(name=>caches.delete(name)));
+        }
+        sessionStorage.removeItem("cbt_session_id");
+        sessionStorage.removeItem("cbt_state");
+      }catch(e){/* localStorage CBT tetap dibersihkan oleh resetState */}
+    }
+    async function resetStudentSession(){
+      if(!confirm("Reset sesi dan kembali ke halaman login? Sesi siswa juga akan ditandai selesai pada server."))return;
+      const button=$("resetButton");
+      setButtonLoading(button,true,"Menyelesaikan sesi...");
+      try{
+        if(state.sessionId){
+          const result=await api("logout",{
+            sessionId:state.sessionId,
+            ip:"",
+            device:getDevice(),
+            status:"selesai"
+          });
+          if(!result||result.success!==true)throw new Error(result?.message||"Server belum mengonfirmasi penyelesaian sesi.");
+        }
+        resetState();
+        await clearApplicationCaches();
+        location.reload();
+      }catch(err){
+        alert("Reset dibatalkan agar status server dan browser tidak berbeda. Gagal menyelesaikan sesi: "+(err.message||"kesalahan jaringan"));
+      }finally{
+        if(document.contains(button))setButtonLoading(button,false,"Reset Login / Sesi");
+      }
+    }
     $("logoutBeforeExam").addEventListener("click",logoutSession);
     $("logoutRunningButton").addEventListener("click",logoutSession);
     $("backLoginButton").addEventListener("click",logoutSession);
-    $("resetButton").addEventListener("click",()=>{if(confirm("Reset sesi dan kembali ke halaman login?")){resetState();location.reload();}});
+    $("resetButton").addEventListener("click",resetStudentSession);
     $("finishButton").addEventListener("click",()=>{resetState();location.reload();});
     $("scheduleButton").addEventListener("click",showScheduleDialog);
     $("closeScheduleButton").addEventListener("click",()=>$("scheduleDialog").close());
@@ -1662,19 +1739,35 @@
     document.addEventListener("keydown",e=>{
       if(!isExamSheetOpen())return;
       const key=String(e.key||"").toLowerCase();
-      // Best-effort: shortcut browser tidak selalu dapat dicegah oleh halaman web.
-      if((e.ctrlKey||e.metaKey)&&["t","n","w"].includes(key))e.preventDefault();
+      // Jika browser meneruskan shortcut ke halaman, blokir dan kunci dengan peringatan.
+      if((e.ctrlKey||e.metaKey)&&["t","n"].includes(key)){
+        e.preventDefault();
+        recordExamViolation("Percobaan membuka tab/jendela baru");
+      }else if((e.ctrlKey||e.metaKey)&&key==="w"){
+        e.preventDefault();
+        recordExamViolation("Percobaan menutup tab Lembar Soal");
+      }
     },true);
     document.addEventListener("auxclick",e=>{
       if(isExamSheetOpen()&&e.button===1)e.preventDefault();
     },true);
 
     document.addEventListener("visibilitychange",()=>{
-      if(document.hidden&&isExamSheetOpen())recordExamViolation("Membuka tab/jendela lain atau meninggalkan Lembar Soal");
+      if(document.hidden&&isExamSheetOpen())recordExamViolation("Beralih tab atau meninggalkan Lembar Soal");
       else{
         if($("violationOverlay").classList.contains("active"))startWarningSound();
         if(state.examActive)updateExamTimer();
       }
+    });
+    // Fallback untuk browser yang tidak mengirim visibilitychange saat fokus berpindah.
+    // Tunggu sejenak agar fokus ke kontrol di iframe Google Form tidak salah dianggap tab baru.
+    window.addEventListener("blur",()=>{
+      window.setTimeout(()=>{
+        if(isExamSheetOpen()&&!document.hasFocus())recordExamViolation("Fokus berpindah dari Lembar Soal");
+      },120);
+    });
+    window.addEventListener("focus",()=>{
+      if($("violationOverlay").classList.contains("active"))startWarningSound();
     });
     window.addEventListener("storage",e=>{
       if(e.key!==CONFIG.VIOLATION_STORAGE_KEY)return;
