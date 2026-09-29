@@ -455,7 +455,8 @@
     .violation-mark{width:56px;height:56px;margin:0 auto 16px;border-radius:50%;display:grid;place-items:center;color:#fff;background:#d93025;font-size:30px;font-weight:900}
     .violation-card h2{margin:0 0 10px;color:#9f1d16;font-size:25px}
     .violation-card p{margin:0 0 18px;color:#46516a;font-size:14px;line-height:1.6}
-    .violation-count{display:inline-block;margin-bottom:18px;padding:7px 12px;border-radius:999px;background:#fff0ef;color:#9f1d16;font-size:12px;font-weight:900}
+    .violation-count{display:inline-block;margin:0 4px 10px;padding:7px 12px;border-radius:999px;background:#fff0ef;color:#9f1d16;font-size:12px;font-weight:900}
+    .violation-countdown{display:block;width:max-content;max-width:100%;margin:0 auto 18px;padding:9px 14px;border:1px solid #ffd1ce;border-radius:12px;background:#fff8f7;color:#9f1d16;font-size:14px;font-weight:900;font-variant-numeric:tabular-nums}
     .violation-card label{text-align:left}
     .violation-card input{height:46px;margin-bottom:10px;font-size:16px;letter-spacing:.2em;text-align:center}
     .violation-error{min-height:20px;margin:0 0 10px!important;color:#b3261e!important;font-size:12px!important}
@@ -1030,8 +1031,9 @@
     <div class="violation-card">
       <div class="violation-mark" aria-hidden="true">!</div>
       <h2 id="violationTitle">PELANGGARAN TERDETEKSI</h2>
-      <p id="violationDescription">Anda meninggalkan halaman ujian atau membuka tab/jendela lain. Peringatan ini tetap terkunci meskipun halaman dimuat ulang.</p>
+      <p id="violationDescription">Anda berpindah dari Lembar Soal atau membuka tab/jendela lain. Masukkan PIN Admin untuk membuka lebih awal, atau tunggu hingga hitung mundur selesai.</p>
       <div class="violation-count" id="violationCount">Pelanggaran 1</div>
+      <div class="violation-countdown" id="violationCountdown" aria-live="assertive">Halaman ujian terbuka otomatis dalam 05:00</div>
       <form id="adminPinForm">
         <label for="adminPinInput">Masukkan PIN Admin untuk melanjutkan</label>
         <input id="adminPinInput" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="PIN Admin" required>
@@ -1049,12 +1051,14 @@
       GAS_WEB_APP_URL: "https://script.google.com/macros/s/AKfycbxpt5jhgpFV69cssShSlesrs3mXT-cQ25iqm3lrHGYJ2M-24l8XxKCHh4ov_Ft9KRhN/exec",
       DEFAULT_GOOGLE_FORM_URL: "https://docs.google.com/forms/d/e/1FAIpQLSdwBS3rLkjRjn8fuw-eArPhGHwVI6BuqWM8MuICHZ4kjlacLg/viewform?usp=header",
       ADMIN_PIN: "1212",
-      VIOLATION_STORAGE_KEY: "cbt_exam_violation_v1"
+      VIOLATION_STORAGE_KEY: "cbt_exam_violation_v1",
+      VIOLATION_DURATION_MS: 5 * 60 * 1000
     };
 
     const state = { sessionId:"", user:null, jadwal:null, googleFormUrl:"", examActive:false, examTimerId:null };
     let warningAudioUnlocked=false;
     let warningSoundPending=false;
+    let violationCountdownId=null;
     const $ = id => document.getElementById(id);
 
     function unlockWarningAudio(){
@@ -1359,6 +1363,9 @@
     }
     function resetState(){
       state.sessionId="";state.user=null;state.jadwal=null;state.googleFormUrl="";state.examActive=false;stopExamTimer();
+      stopViolationCountdown();
+      try{localStorage.removeItem(CONFIG.VIOLATION_STORAGE_KEY);}catch(e){}
+      $("violationOverlay").classList.remove("active");stopWarningSound();
       localStorage.removeItem("cbt_session_id");localStorage.removeItem("cbt_state");
     }
     function restoreState(){
@@ -1453,17 +1460,15 @@
       const url=state.googleFormUrl||CONFIG.DEFAULT_GOOGLE_FORM_URL;
       if(!url){alert("Link Google Form belum tersedia.");return;}
       saveState();
-      if(isMobileFormDevice()){
-        // Jangan memaksa Google Form lintas-domain berada di iframe pada mobile.
-        // Navigasi langsung membuat CSS, font, pilihan, dan validasi Google Form tampil normal.
-        window.location.assign(makeStandaloneFormUrl(url));
-        return;
-      }
+      // Form tetap di dalam halaman CBT pada desktop maupun ponsel agar perubahan
+      // tab dapat diawasi. Google Form mendukung parameter embedded=true.
       $("embeddedFormTitle").textContent="Ujian CBT • "+formatValue(state.jadwal?.mapel);
       $("embeddedStudentName").textContent=formatValue(state.user?.nama)+" • Kelas "+formatValue(state.user?.kelas);
       $("googleFormFrame").src=makeEmbeddedFormUrl(url);
       $("googleFormOverlay").classList.add("active");
       $("googleFormOverlay").setAttribute("aria-hidden","false");
+      const savedViolation=getSavedViolation();
+      if(savedViolation?.locked)showViolationLock(savedViolation);
     }
     function closeGoogleForm(){
       $("googleFormOverlay").classList.remove("active");
@@ -1472,34 +1477,79 @@
     function getSavedViolation(){
       try{return JSON.parse(localStorage.getItem(CONFIG.VIOLATION_STORAGE_KEY)||"null");}catch(e){return null;}
     }
+    function isExamSheetOpen(){
+      return state.examActive && $("googleFormOverlay").classList.contains("active");
+    }
+    function stopViolationCountdown(){
+      if(violationCountdownId){clearInterval(violationCountdownId);violationCountdownId=null;}
+    }
+    function clearViolationLock(){
+      stopViolationCountdown();
+      try{localStorage.removeItem(CONFIG.VIOLATION_STORAGE_KEY);}catch(e){}
+      $("violationOverlay").classList.remove("active");
+      stopWarningSound();
+      if(state.examActive)updateExamTimer();
+    }
+    function startViolationCountdown(expiresAt){
+      stopViolationCountdown();
+      const tick=()=>{
+        const remaining=Math.max(0,Number(expiresAt)-Date.now());
+        const seconds=Math.ceil(remaining/1000);
+        const minutes=String(Math.floor(seconds/60)).padStart(2,"0");
+        const rest=String(seconds%60).padStart(2,"0");
+        $("violationCountdown").textContent="Halaman ujian terbuka otomatis dalam "+minutes+":"+rest;
+        if(remaining<=0)clearViolationLock();
+      };
+      tick();
+      if($("violationOverlay").classList.contains("active"))violationCountdownId=setInterval(tick,250);
+    }
     function showViolationLock(record){
-      const count=Math.max(1,Number(record?.count)||1);
+      if(!record||!record.locked)return;
+      let expiresAt=Number(record.expiresAt);
+      // Migrasi lock versi lama yang belum menyimpan waktu kedaluwarsa.
+      if(!Number.isFinite(expiresAt)||expiresAt<=0){
+        expiresAt=Date.now()+CONFIG.VIOLATION_DURATION_MS;
+        record={...record,expiresAt};
+        try{localStorage.setItem(CONFIG.VIOLATION_STORAGE_KEY,JSON.stringify(record));}catch(e){}
+      }
+      if(expiresAt<=Date.now()){clearViolationLock();return;}
+      const count=Math.max(1,Number(record.count)||1);
       $("violationCount").textContent="Pelanggaran "+count;
       $("adminPinError").textContent="";
       $("violationOverlay").classList.add("active");
       $("adminPinInput").value="";
+      startViolationCountdown(expiresAt);
       startWarningSound();
     }
     function recordExamViolation(reason){
-      if(!state.examActive)return;
+      if(!isExamSheetOpen())return;
       const existing=getSavedViolation();
-      const record={locked:true,count:(Number(existing?.count)||0)+1,reason:reason||"Meninggalkan halaman ujian",time:new Date().toISOString()};
+      // Jangan memperpanjang atau menggandakan lock untuk satu perpindahan tab.
+      if(existing?.locked&&Number(existing.expiresAt)>Date.now()){
+        showViolationLock(existing);
+        return;
+      }
+      const record={
+        locked:true,
+        count:(Number(existing?.count)||0)+1,
+        reason:reason||"Meninggalkan halaman ujian",
+        time:new Date().toISOString(),
+        expiresAt:Date.now()+CONFIG.VIOLATION_DURATION_MS
+      };
       try{localStorage.setItem(CONFIG.VIOLATION_STORAGE_KEY,JSON.stringify(record));}catch(e){}
       showViolationLock(record);
     }
     function restoreViolationLock(){
       const record=getSavedViolation();
-      if(record&&record.locked)showViolationLock(record);
+      if(record&&record.locked&&isExamSheetOpen())showViolationLock(record);
+      else if(record&&Number(record.expiresAt)>0&&Number(record.expiresAt)<=Date.now())clearViolationLock();
     }
     $("adminPinForm").addEventListener("submit",e=>{
       e.preventDefault();
       const pin=$("adminPinInput").value.trim();
       if(pin!==CONFIG.ADMIN_PIN){$("adminPinError").textContent="PIN Admin salah. Peringatan tetap terkunci.";$("adminPinInput").select();return;}
-      localStorage.removeItem(CONFIG.VIOLATION_STORAGE_KEY);
-      $("violationOverlay").classList.remove("active");
-      stopWarningSound();
+      clearViolationLock();
       $("adminPinError").textContent="";
-      if(state.examActive)updateExamTimer();
     });
     async function recordFormSubmission(button){
       setButtonLoading(button,true,"Mencatat...");
@@ -1604,13 +1654,23 @@
     $("scheduleDialog").addEventListener("click",e=>{if(e.target===e.currentTarget)e.currentTarget.close();});
 
     document.addEventListener("contextmenu",e=>{
-      if(!state.examActive)return;
+      // Proteksi hanya aktif pada Lembar Soal; off di Verifikasi Sesi dan kuesioner.
+      if(!isExamSheetOpen())return;
       e.preventDefault();
-      recordExamViolation("Klik kanan saat ujian berlangsung");
+      if(!$("violationOverlay").classList.contains("active"))recordExamViolation("Klik kanan saat Lembar Soal terbuka");
     });
+    document.addEventListener("keydown",e=>{
+      if(!isExamSheetOpen())return;
+      const key=String(e.key||"").toLowerCase();
+      // Best-effort: shortcut browser tidak selalu dapat dicegah oleh halaman web.
+      if((e.ctrlKey||e.metaKey)&&["t","n","w"].includes(key))e.preventDefault();
+    },true);
+    document.addEventListener("auxclick",e=>{
+      if(isExamSheetOpen()&&e.button===1)e.preventDefault();
+    },true);
 
     document.addEventListener("visibilitychange",()=>{
-      if(document.hidden&&state.examActive)recordExamViolation("Membuka tab/jendela lain atau meninggalkan halaman ujian");
+      if(document.hidden&&isExamSheetOpen())recordExamViolation("Membuka tab/jendela lain atau meninggalkan Lembar Soal");
       else{
         if($("violationOverlay").classList.contains("active"))startWarningSound();
         if(state.examActive)updateExamTimer();
@@ -1618,8 +1678,12 @@
     });
     window.addEventListener("storage",e=>{
       if(e.key!==CONFIG.VIOLATION_STORAGE_KEY)return;
-      if(e.newValue){try{const record=JSON.parse(e.newValue);if(record&&record.locked){startWarningSound();showViolationLock(record);}}catch(err){}}
-      else{$("violationOverlay").classList.remove("active");stopWarningSound();}
+      if(e.newValue){try{const record=JSON.parse(e.newValue);if(record&&record.locked&&isExamSheetOpen())showViolationLock(record);}catch(err){}}
+      else{
+        stopViolationCountdown();
+        $("violationOverlay").classList.remove("active");
+        stopWarningSound();
+      }
     });
 
     loadClasses();
